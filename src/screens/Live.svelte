@@ -4,6 +4,7 @@
   import { go } from '../lib/nav.svelte';
   import { quizById } from '../lib/store.svelte';
   import BuzzerStage from './live/BuzzerStage.svelte';
+  import RapidStage from './live/RapidStage.svelte';
   import RoundBoard from './live/RoundBoard.svelte';
   import StandardStage from './live/StandardStage.svelte';
 
@@ -33,11 +34,9 @@
     <BuzzerStage {quiz} {round} onback={toBoard} />
   {/key}
 {:else}
-  <main class="notice">
-    <h1>{round.name} is not built yet</h1>
-    <p>This round type arrives in a later step.</p>
-    <Button type="button" variant="primary" onclick={toBoard}>Back to round board</Button>
-  </main>
+  {#key round.id}
+    <RapidStage {quiz} {round} onback={toBoard} />
+  {/key}
 {/if}
 
 <style>
