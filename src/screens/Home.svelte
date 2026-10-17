@@ -54,6 +54,10 @@
     commit((data) => (data.muted = !data.muted));
   }
 
+  function hasDevanagari(text: string) {
+    return /\p{Script=Devanagari}/u.test(text);
+  }
+
   function plural(count: number, noun: string) {
     return `${count} ${noun}${count === 1 ? '' : 's'}`;
   }
@@ -65,7 +69,7 @@
     <div class="tools">
       <Button type="button" popovertarget="settings">Settings</Button>
       {#if app.quizzes.length > 0}
-        <Button type="button" variant="primary" onclick={startCreate}>New quiz</Button>
+        <Button type="button" onclick={startCreate}>New quiz</Button>
       {/if}
     </div>
     <div id="settings" popover="auto">
@@ -94,7 +98,7 @@
       {#each app.quizzes as quiz (quiz.id)}
         <li>
           <div class="summary">
-            <h2>{quiz.title}</h2>
+            <h2 lang={hasDevanagari(quiz.title) ? 'hi' : undefined}>{quiz.title}</h2>
             <p>{quiz.level} · {quiz.subject}</p>
             <p class="meta">
               {plural(quiz.teams.length, 'team')}, {plural(quiz.rounds.length, 'round')}, created
@@ -103,17 +107,17 @@
           </div>
           <div class="actions">
             <Button type="button" onclick={() => go({ screen: 'setup', quizId: quiz.id })}>
-              Open<span class="sr"> {quiz.title}</span>
+              Open <span class="sr">{quiz.title}</span>
             </Button>
             <Button
               type="button"
               variant="primary"
               onclick={() => go({ screen: 'live', quizId: quiz.id, roundId: null })}
             >
-              Run<span class="sr"> {quiz.title}</span>
+              Run <span class="sr">{quiz.title}</span>
             </Button>
-            <Button type="button" variant="danger" onclick={() => askDelete(quiz)}>
-              Delete<span class="sr"> {quiz.title}</span>
+            <Button type="button" variant="quiet" onclick={() => askDelete(quiz)}>
+              Delete <span class="sr">{quiz.title}</span>
             </Button>
           </div>
         </li>
@@ -276,14 +280,5 @@
   form {
     display: grid;
     gap: var(--space-3);
-  }
-
-  .sr {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 </style>

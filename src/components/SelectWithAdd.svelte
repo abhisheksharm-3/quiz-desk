@@ -1,5 +1,6 @@
 <!-- Select whose last option, "Add new…", swaps in a text input that appends to the list. -->
 <script lang="ts">
+  import { tick } from 'svelte';
   import Button from './Button.svelte';
   import Field from './Field.svelte';
 
@@ -13,28 +14,34 @@
   const ADD_NEW = '__add_new__';
   let adding = $state(false);
   let draft = $state('');
+  let select: HTMLSelectElement | undefined = $state();
+  let addInput: HTMLInputElement | undefined = $state();
 
-  function choose(event: Event & { currentTarget: HTMLSelectElement }) {
+  async function choose(event: Event & { currentTarget: HTMLSelectElement }) {
     const picked = event.currentTarget.value;
     if (picked === ADD_NEW) {
       adding = true;
       event.currentTarget.value = value;
+      await tick();
+      addInput?.focus();
     } else {
       value = picked;
     }
   }
 
-  function cancelAdd() {
+  async function closeAddRow() {
     draft = '';
     adding = false;
+    await tick();
+    select?.focus();
   }
 
   /** Saves a non-empty "Add new" draft; the form calls it on submit so a typed value is not lost. */
   export function commitDraft() {
-    if (adding) confirmAdd();
+    if (adding) saveDraft();
   }
 
-  function confirmAdd() {
+  function saveDraft() {
     const name = draft.trim();
     if (name) {
       const existing = options.find((option) => option.toLowerCase() === name.toLowerCase());
@@ -44,6 +51,12 @@
     draft = '';
     adding = false;
   }
+
+  async function confirmAdd() {
+    saveDraft();
+    await tick();
+    select?.focus();
+  }
 </script>
 
 {#if adding}
@@ -51,6 +64,7 @@
     <Field label="New {label.toLowerCase()}">
       <input
         bind:value={draft}
+        bind:this={addInput}
         onkeydown={(event) => {
           if (event.key === 'Enter') {
             event.preventDefault();
@@ -60,11 +74,13 @@
       />
     </Field>
     <Button type="button" variant="primary" onclick={confirmAdd}>Add</Button>
-    <Button type="button" onclick={cancelAdd}>Cancel</Button>
+    <Button type="button" onclick={closeAddRow}>
+      Cancel <span class="sr">new {label.toLowerCase()}</span>
+    </Button>
   </div>
 {:else}
   <Field {label}>
-    <select {value} onchange={choose}>
+    <select bind:this={select} {value} onchange={choose}>
       {#each options as option (option)}
         <option value={option} selected={option === value}>{option}</option>
       {/each}
