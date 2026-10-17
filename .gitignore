@@ -1,0 +1,5 @@
+.superpowers/
+.polaris/work/
+node_modules/
+dist/
+src-tauri/target/
