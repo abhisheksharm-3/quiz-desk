@@ -79,7 +79,7 @@
   }
 
   $effect(() => {
-    if (editing) focusFirstField();
+    focusFirstField();
   });
 
   function focusFirstField() {
@@ -184,9 +184,7 @@
   {/if}
 
   <div class="buttons">
-    {#if editing}
-      <Button type="button" onclick={oncancel}>Cancel</Button>
-    {/if}
+    <Button type="button" onclick={oncancel}>{editing ? 'Cancel' : 'Close'}</Button>
     <Button type="submit" variant="primary">
       {editing ? 'Save changes' : isPicture ? 'Add picture to round' : 'Add question'}
     </Button>
@@ -200,8 +198,6 @@
   form {
     display: grid;
     gap: var(--space-3);
-    padding-block-start: var(--space-4);
-    border-block-start: 1px solid var(--line);
   }
 
   .pair {

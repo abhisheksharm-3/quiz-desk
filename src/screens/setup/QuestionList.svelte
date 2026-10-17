@@ -1,6 +1,7 @@
-<!-- Question list: one row per question with its number, text in the quiz's language, an asked badge, edit and delete. -->
+<!-- Question list: one row per question with its number, text in the quiz's language, an asked badge, edit and a delete menu. -->
 <script lang="ts">
   import Button from '../../components/Button.svelte';
+  import Menu from '../../components/Menu.svelte';
   import type { Question, Quiz, Round } from '../../lib/domain/types';
   import { pictureSrc } from '../../lib/pictures';
 
@@ -28,7 +29,7 @@
 
 {#if round.questions.length === 0}
   <p class="empty">
-    No {noun}s in this round yet. {round.type === 'picture' ? 'Add the first one below.' : 'Add the first one below, or import a spreadsheet.'}
+    No {noun}s in this round yet. {round.type === 'picture' ? 'Use "+ Add picture" to add the first one.' : 'Use "+ Add question" to type the first one, or import a spreadsheet.'}
   </p>
 {:else}
   <ol>
@@ -50,9 +51,10 @@
           <Button type="button" onclick={() => onedit(question)}>
             Edit <span class="sr">{noun} {index + 1}</span>
           </Button>
-          <Button type="button" onclick={() => ondelete(question)}>
-            Delete <span class="sr">{noun} {index + 1}</span>
-          </Button>
+          <Menu
+            label="More actions for {noun} {index + 1}"
+            items={[{ text: `Delete ${noun}`, danger: true, run: () => ondelete(question) }]}
+          />
         </div>
       </li>
     {/each}
@@ -72,13 +74,14 @@
     grid-template-columns: 2.5rem minmax(0, 1fr) auto;
     align-items: start;
     gap: var(--space-3);
-    padding-block: var(--space-3);
+    padding-block: var(--space-2);
     border-block-end: 1px solid var(--line);
   }
 
   .number {
     color: var(--muted);
     font-weight: 600;
+    padding-block-start: var(--space-2);
   }
 
   .body {
@@ -86,6 +89,7 @@
     justify-items: start;
     gap: var(--space-1);
     min-width: 0;
+    padding-block-start: var(--space-2);
   }
 
   img {
@@ -105,8 +109,8 @@
 
   .actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
+    align-items: center;
+    gap: var(--space-1);
   }
 
   .empty {

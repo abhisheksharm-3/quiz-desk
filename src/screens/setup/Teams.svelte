@@ -1,7 +1,9 @@
-<!-- Teams tab: add, rename and delete teams, up to the ten a quiz allows. -->
+<!-- Teams step: add schools with Enter, rename them in place, delete from the row menu, up to the ten a quiz allows. -->
 <script lang="ts">
   import Button from '../../components/Button.svelte';
+  import Confirm from '../../components/Confirm.svelte';
   import Field from '../../components/Field.svelte';
+  import Menu from '../../components/Menu.svelte';
   import { attempt } from '../../lib/attempt';
   import { addTeam, deleteTeam, MAX_TEAMS, renameTeam } from '../../lib/domain/quiz';
   import type { Quiz, Team } from '../../lib/domain/types';
@@ -10,6 +12,7 @@
   let { quiz }: { quiz: Quiz } = $props();
   let name = $state('');
   let message: string | null = $state(null);
+  let pendingDelete: Team | null = $state(null);
 
   function add(event: SubmitEvent) {
     event.preventDefault();
@@ -29,62 +32,87 @@
     if (message) input.value = team.name;
   }
 
-  function remove(team: Team) {
-    message = attempt(() => commit(() => deleteTeam(quiz, team.id)));
+  function confirmDelete() {
+    if (pendingDelete) {
+      const { id } = pendingDelete;
+      message = attempt(() => commit(() => deleteTeam(quiz, id)));
+    }
+    pendingDelete = null;
   }
 </script>
 
 <section>
-  <div class="head">
-    <h2>Teams</h2>
-    <p class="count">{quiz.teams.length} / {MAX_TEAMS}</p>
-  </div>
-
   <form onsubmit={add}>
-    <Field label="Team name">
-      <input bind:value={name} autocomplete="off" />
+    <Field label="Add a school">
+      <input
+        bind:value={name}
+        autocomplete="off"
+        placeholder="Type a school name, press Enter"
+        disabled={quiz.teams.length >= MAX_TEAMS}
+      />
     </Field>
-    <Button type="submit" variant="primary" disabled={!name.trim() || quiz.teams.length >= MAX_TEAMS}>
-      Add team
-    </Button>
+    <Button type="submit" disabled={!name.trim() || quiz.teams.length >= MAX_TEAMS}>Add</Button>
   </form>
 
   {#if message}
     <p class="error" role="alert">{message}</p>
   {/if}
 
+  <div class="list-head">
+    <h3>Schools</h3>
+    <p class="count">{quiz.teams.length} / {MAX_TEAMS}</p>
+  </div>
+
   {#if quiz.teams.length === 0}
-    <p class="empty">No teams yet. Add the competing schools, at least 2 and at most {MAX_TEAMS}.</p>
+    <p class="empty">No schools yet. Type the first school's name above and press Enter.</p>
   {:else}
-    <ul>
+    <ol>
       {#each quiz.teams as team, index (team.id)}
         <li>
+          <span class="number" aria-hidden="true">{index + 1}</span>
           <input
             aria-label="Name of team {index + 1}"
             value={team.name}
             autocomplete="off"
             onchange={(e) => rename(team, e.currentTarget)}
           />
-          <Button type="button" onclick={() => remove(team)}>
-            Delete <span class="sr">{team.name}</span>
-          </Button>
+          <Menu
+            label="More actions for {team.name}"
+            items={[{ text: 'Delete team', danger: true, run: () => (pendingDelete = team) }]}
+          />
         </li>
       {/each}
-    </ul>
+    </ol>
   {/if}
 </section>
+
+<Confirm
+  bind:open={() => pendingDelete !== null, (isOpen) => !isOpen && (pendingDelete = null)}
+  title="Delete this team?"
+  confirmLabel="Delete team"
+  keepLabel="Keep team"
+  onconfirm={confirmDelete}>
+  {pendingDelete?.name} will be removed from the quiz.
+</Confirm>
 
 <style>
   section {
     display: grid;
     gap: var(--space-3);
-    max-width: 38rem;
   }
 
-  .head {
+  form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--space-2);
+  }
+
+  .list-head {
     display: flex;
     align-items: baseline;
-    gap: var(--space-3);
+    justify-content: space-between;
+    margin-block-start: var(--space-3);
   }
 
   .count {
@@ -92,27 +120,41 @@
     font-weight: 600;
   }
 
-  form,
-  li {
+  ol {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-2);
-  }
-
-  form {
-    align-items: end;
-  }
-
-  li {
-    align-items: center;
-  }
-
-  ul {
-    display: grid;
-    gap: var(--space-3);
     margin: 0;
     padding: 0;
     list-style: none;
+    border-block-start: 1px solid var(--line);
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2);
+    padding-block: var(--space-1);
+    border-block-end: 1px solid var(--line);
+  }
+
+  .number {
+    color: var(--muted);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  li input {
+    border-color: transparent;
+    font-size: var(--step-1);
+    font-weight: 600;
+  }
+
+  li input:hover {
+    border-color: var(--line);
+  }
+
+  li input:focus {
+    border-color: var(--accent);
   }
 
   .error {

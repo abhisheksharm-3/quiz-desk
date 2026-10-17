@@ -30,7 +30,7 @@
   {#if nav.screen === 'home'}
     <Home />
   {:else if nav.screen === 'setup'}
-    <Setup quizId={nav.quizId} />
+    <Setup quizId={nav.quizId} step={nav.step} />
   {:else if nav.screen === 'live'}
     <Live quizId={nav.quizId} roundId={nav.roundId} />
   {:else}

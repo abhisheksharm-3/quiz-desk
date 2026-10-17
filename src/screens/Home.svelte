@@ -227,6 +227,9 @@
   ul {
     display: grid;
     gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   li {
