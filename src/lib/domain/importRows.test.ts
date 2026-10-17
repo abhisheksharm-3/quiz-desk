@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseQuestionRows } from './importRows';
+import { parseQuestionRows, TEMPLATE_COLUMNS } from './importRows';
 import { addRound, createQuiz, emptyAppData } from './quiz';
 
 const input = { title: 'T', level: 'Block level', subject: 'Science quiz', venue: '', quizMasters: '' };
@@ -10,6 +10,8 @@ function quizWithRounds() {
   addRound(quiz, 'Pictures', 'picture');
   return { quiz, physics };
 }
+
+const headers = [...TEMPLATE_COLUMNS];
 
 const blank = {
   Round: '',
@@ -37,7 +39,7 @@ describe('parseQuestionRows', () => {
       { ...blank, Round: 'Pictures', 'Question (English)': 'x' },
     ];
 
-    const { items, errors } = parseQuestionRows(quiz, rows);
+    const { items, errors } = parseQuestionRows(quiz, { headers, rows });
 
     expect(items).toEqual([
       {
@@ -62,7 +64,10 @@ describe('parseQuestionRows', () => {
     ['correct option with no options', { 'Correct option': 'B' }],
   ])('rejects a correct option with no text: %s', (_name, cells) => {
     const { quiz } = quizWithRounds();
-    const { items, errors } = parseQuestionRows(quiz, [{ ...blank, Round: 'Physics', 'Question (English)': 'x', ...cells }]);
+    const { items, errors } = parseQuestionRows(quiz, {
+      headers,
+      rows: [{ ...blank, Round: 'Physics', 'Question (English)': 'x', ...cells }],
+    });
     expect(items).toEqual([]);
     expect(errors).toEqual([
       { row: 2, message: `Row 2: option ${cells['Correct option']} is marked correct but has no text` },
@@ -71,7 +76,10 @@ describe('parseQuestionRows', () => {
 
   it.each([['round'], ['Round '], ['Question']])('names the missing template headers when the file has "%s"', (header) => {
     const { quiz } = quizWithRounds();
-    const { items, errors } = parseQuestionRows(quiz, [{ [header]: 'Physics', 'Question (English)': 'x' }]);
+    const { items, errors } = parseQuestionRows(quiz, {
+      headers: [header, 'Question (English)'],
+      rows: [{ [header]: 'Physics', 'Question (English)': 'x' }],
+    });
     expect(items).toEqual([]);
     expect(errors).toHaveLength(1);
     expect(errors[0].message).toContain('Round');
@@ -80,7 +88,20 @@ describe('parseQuestionRows', () => {
 
   it('skips a row of only spaces without an error', () => {
     const { quiz } = quizWithRounds();
-    const result = parseQuestionRows(quiz, [{ ...blank, Round: '   ' }]);
+    const result = parseQuestionRows(quiz, { headers, rows: [{ ...blank, Round: '   ' }] });
     expect(result).toEqual({ items: [], errors: [] });
+  });
+
+  it.each([[['foo', 'bar']], [[]]])('reports a missing header row for a file with headers %j and no data rows', (fileHeaders) => {
+    const { quiz } = quizWithRounds();
+    const { items, errors } = parseQuestionRows(quiz, { headers: fileHeaders, rows: [] });
+    expect(items).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain('Start from the template');
+  });
+
+  it('accepts a file that has the template headers and no data rows', () => {
+    const { quiz } = quizWithRounds();
+    expect(parseQuestionRows(quiz, { headers, rows: [] })).toEqual({ items: [], errors: [] });
   });
 });

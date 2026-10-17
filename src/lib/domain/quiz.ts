@@ -15,7 +15,7 @@ export const MAX_TEAMS = 10;
 export const MAX_ROUNDS = 7;
 export const MAX_TIMER_SECONDS = 30;
 const DEFAULT_TIMER_SECONDS = 30;
-const RAPID_TIMER_SECONDS = 60;
+export const RAPID_TIMER_SECONDS = 60;
 
 /** A rule violation whose message is safe to show the teacher. */
 export class QuizRuleError extends Error {}
@@ -56,13 +56,16 @@ export function addTeam(quiz: Quiz, name: string): Team {
   if (quiz.teams.length >= MAX_TEAMS) {
     throw new QuizRuleError(`A quiz can have at most ${MAX_TEAMS} teams`);
   }
+  assertNameFree(quiz.teams, 'team', name);
   const team = { id: crypto.randomUUID(), name };
   quiz.teams.push(team);
   return team;
 }
 
 export function renameTeam(quiz: Quiz, teamId: string, name: string): void {
-  findTeam(quiz, teamId).name = name;
+  const team = findTeam(quiz, teamId);
+  assertNameFree(quiz.teams, 'team', name, teamId);
+  team.name = name;
 }
 
 export function deleteTeam(quiz: Quiz, teamId: string): void {
@@ -76,7 +79,7 @@ export function addRound(quiz: Quiz, name: string, type: RoundType): Round {
   if (quiz.rounds.length >= MAX_ROUNDS) {
     throw new QuizRuleError(`A quiz can have at most ${MAX_ROUNDS} rounds`);
   }
-  assertRoundNameFree(quiz, name);
+  assertNameFree(quiz.rounds, 'round', name);
   const round: Round = {
     id: crypto.randomUUID(),
     name,
@@ -94,7 +97,7 @@ export function updateRound(
   patch: Partial<Pick<Round, 'name' | 'type' | 'timerSeconds'>>,
 ): void {
   const round = findRound(quiz, roundId);
-  if (patch.name !== undefined) assertRoundNameFree(quiz, patch.name, roundId);
+  if (patch.name !== undefined) assertNameFree(quiz.rounds, 'round', patch.name, roundId);
   const type = patch.type ?? round.type;
   const changesType = type !== round.type;
   const timerSeconds =
@@ -102,16 +105,17 @@ export function updateRound(
   if (!Number.isInteger(timerSeconds) || timerSeconds < 1) {
     throw new QuizRuleError('The timer must be a whole number of at least 1 second');
   }
-  if (type !== 'rapid' && timerSeconds > MAX_TIMER_SECONDS) {
-    throw new QuizRuleError(`The timer can be at most ${MAX_TIMER_SECONDS} seconds`);
+  const maxSeconds = maxTimerSeconds(type);
+  if (timerSeconds > maxSeconds) {
+    throw new QuizRuleError(`The timer can be at most ${maxSeconds} seconds`);
   }
   Object.assign(round, patch, { type, timerSeconds });
 }
 
-function assertRoundNameFree(quiz: Quiz, name: string, exceptId?: string): void {
+function assertNameFree(items: { id: string; name: string }[], kind: 'team' | 'round', name: string, exceptId?: string): void {
   const wanted = name.trim().toLowerCase();
-  if (quiz.rounds.some((round) => round.id !== exceptId && round.name.trim().toLowerCase() === wanted)) {
-    throw new QuizRuleError(`A round named "${name.trim()}" already exists`);
+  if (items.some((item) => item.id !== exceptId && item.name.trim().toLowerCase() === wanted)) {
+    throw new QuizRuleError(`A ${kind} named "${name.trim()}" already exists`);
   }
 }
 
@@ -168,6 +172,10 @@ export function addScore(
 
 export function undoLastScore(quiz: Quiz): ScoreEntry | null {
   return quiz.scores.pop() ?? null;
+}
+
+function maxTimerSeconds(type: RoundType): number {
+  return type === 'rapid' ? RAPID_TIMER_SECONDS : MAX_TIMER_SECONDS;
 }
 
 function defaultTimerSeconds(type: RoundType): number {

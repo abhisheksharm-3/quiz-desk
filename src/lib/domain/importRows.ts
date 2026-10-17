@@ -21,6 +21,11 @@ export interface ImportItem {
   draft: QuestionDraft;
 }
 
+export interface Sheet {
+  headers: string[];
+  rows: Record<string, unknown>[];
+}
+
 export interface ImportError {
   row: number;
   message: string;
@@ -30,13 +35,10 @@ const OPTION_COLUMNS = ['Option A', 'Option B', 'Option C', 'Option D'] as const
 const FIRST_DATA_ROW = 2;
 
 /** `row` is the spreadsheet row number, with the header as row 1. Blank rows are skipped without an error. */
-export function parseQuestionRows(
-  quiz: Quiz,
-  rows: Record<string, unknown>[],
-): { items: ImportItem[]; errors: ImportError[] } {
+export function parseQuestionRows(quiz: Quiz, { headers, rows }: Sheet): { items: ImportItem[]; errors: ImportError[] } {
   const items: ImportItem[] = [];
   const errors: ImportError[] = [];
-  const missing = rows.length > 0 ? TEMPLATE_COLUMNS.filter((column) => !(column in rows[0])) : [];
+  const missing = TEMPLATE_COLUMNS.filter((column) => !headers.includes(column));
   if (missing.length > 0) {
     return { items, errors: [{ row: 1, message: `The header row is missing: ${missing.join(', ')}. Start from the template.` }] };
   }

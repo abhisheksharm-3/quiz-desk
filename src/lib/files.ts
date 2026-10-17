@@ -6,20 +6,18 @@ import { inTauri } from './storage';
 
 const SPREADSHEET_TYPES = ['xlsx', 'csv'];
 
-/** Saves bytes under a name the teacher picks. Returns false when the teacher cancels. */
-export async function saveBytes(name: string, bytes: Uint8Array): Promise<boolean> {
+/** Saves bytes under a name the teacher picks. Saves nothing when the teacher cancels. */
+export async function saveBytes(name: string, bytes: Uint8Array): Promise<void> {
   if (!inTauri()) {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([bytes as BlobPart]));
     link.download = name;
     link.click();
     URL.revokeObjectURL(link.href);
-    return true;
+    return;
   }
   const path = await save({ defaultPath: name, filters: [{ name: 'Excel workbook', extensions: ['xlsx'] }] });
-  if (!path) return false;
-  await writeFile(path, bytes);
-  return true;
+  if (path) await writeFile(path, bytes);
 }
 
 /** Opens the browser file chooser for the given extensions and resolves with the chosen file, or null when the teacher cancels. */

@@ -9,6 +9,7 @@ import {
   deleteTeam,
   emptyAppData,
   markAsked,
+  renameTeam,
   resetAsked,
   undoLastScore,
   updateRound,
@@ -47,7 +48,16 @@ describe('limits', () => {
     updateRound(quiz, other.id, { name: 'maths' });
   });
 
-  it('caps the timer at 30 seconds for non-rapid rounds only', () => {
+  it('refuses a second team with the same name, ignoring case and spacing, on add and rename', () => {
+    const quiz = newQuiz();
+    addTeam(quiz, 'DPS');
+    const other = addTeam(quiz, 'KV');
+    expect(() => addTeam(quiz, 'dps ')).toThrow('A team named "dps" already exists');
+    expect(() => renameTeam(quiz, other.id, 'Dps')).toThrow(QuizRuleError);
+    renameTeam(quiz, other.id, 'kv');
+  });
+
+  it('caps the timer at 30 seconds for standard rounds and 60 for rapid fire', () => {
     const quiz = newQuiz();
     const standard = addRound(quiz, 'S', 'standard');
     const rapid = addRound(quiz, 'R', 'rapid');
@@ -57,6 +67,8 @@ describe('limits', () => {
     expect(act).toThrow('The timer can be at most 30 seconds');
     expect(standard.timerSeconds).toBe(30);
     updateRound(quiz, rapid.id, { timerSeconds: 45 });
+    expect(rapid.timerSeconds).toBe(45);
+    expect(() => updateRound(quiz, rapid.id, { timerSeconds: 999999999 })).toThrow('The timer can be at most 60 seconds');
     expect(rapid.timerSeconds).toBe(45);
   });
 

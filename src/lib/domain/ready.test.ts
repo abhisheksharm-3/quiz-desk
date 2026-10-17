@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findDuplicate, sameQuestion } from './duplicate';
+import { findDuplicate, textKeys } from './duplicate';
 import { addQuestion, addRound, addTeam, createQuiz, emptyAppData } from './quiz';
 import { readyCheck } from './ready';
 import type { Quiz, QuestionDraft, RoundType } from './types';
@@ -127,8 +127,8 @@ describe('findDuplicate', () => {
   });
 
   it('compares two drafts the same way, so repeats inside one import are caught', () => {
-    expect(sameQuestion({ en: 'What is  H2O?', hi: '' }, { en: 'what is h2o', hi: '' })).toBe(true);
-    expect(sameQuestion({ en: '', hi: '' }, { en: '', hi: '' })).toBe(false);
+    expect(textKeys({ en: 'What is  H2O?', hi: '' })).toEqual(textKeys({ en: 'what is h2o', hi: '' }));
+    expect(textKeys({ en: '', hi: '' })).toEqual([]);
   });
 
   it('skips the question being edited', () => {

@@ -2,7 +2,7 @@
 <script lang="ts">
   import Button from '../../components/Button.svelte';
   import Dialog from '../../components/Dialog.svelte';
-  import { findDuplicate, sameQuestion } from '../../lib/domain/duplicate';
+  import { textKeys } from '../../lib/domain/duplicate';
   import { parseQuestionRows, type ImportError, type ImportItem } from '../../lib/domain/importRows';
   import { addQuestion } from '../../lib/domain/quiz';
   import type { Quiz } from '../../lib/domain/types';
@@ -22,18 +22,20 @@
     }
   }
 
-  const rows = $derived(
-    (preview?.items ?? []).map((item, index, items) => ({
-      item,
-      round: quiz.rounds.find((round) => round.id === item.roundId)?.name ?? '',
-      note: duplicateNote(item, items.slice(0, index)),
-    })),
-  );
-
-  function duplicateNote(item: ImportItem, earlier: ImportItem[]): string {
-    if (findDuplicate(quiz, item.draft)) return 'Already in this quiz';
-    return earlier.some((other) => sameQuestion(other.draft, item.draft)) ? 'Repeated earlier in this file' : '';
-  }
+  const rows = $derived.by(() => {
+    const inQuiz = new Set(quiz.rounds.flatMap((round) => round.questions.flatMap(textKeys)));
+    const inFile = new Set<string>();
+    return (preview?.items ?? []).map((item) => {
+      const keys = textKeys(item.draft);
+      const note = keys.some((key) => inQuiz.has(key))
+        ? 'Already in this quiz'
+        : keys.some((key) => inFile.has(key))
+          ? 'Repeated earlier in this file'
+          : '';
+      keys.forEach((key) => inFile.add(key));
+      return { item, round: quiz.rounds.find((round) => round.id === item.roundId)?.name ?? '', note };
+    });
+  });
 
   async function downloadTemplate() {
     failure = null;
@@ -134,9 +136,11 @@
   .error {
     color: var(--wrong);
     font-weight: 600;
+    overflow-wrap: anywhere;
   }
 
   .errors {
+    overflow-wrap: anywhere;
     display: grid;
     gap: var(--space-1);
     margin: var(--space-2) 0 0;
@@ -160,6 +164,7 @@
     padding: var(--space-2);
     text-align: start;
     vertical-align: top;
+    overflow-wrap: anywhere;
     border-block-end: 1px solid var(--line);
   }
 </style>

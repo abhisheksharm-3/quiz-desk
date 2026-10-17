@@ -25,7 +25,8 @@
       input.value = team.name;
       return;
     }
-    commit(() => renameTeam(quiz, team.id, trimmed));
+    message = attempt(() => commit(() => renameTeam(quiz, team.id, trimmed)));
+    if (message) input.value = team.name;
   }
 
   function remove(team: Team) {

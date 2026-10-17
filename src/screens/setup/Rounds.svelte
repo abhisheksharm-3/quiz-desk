@@ -11,6 +11,7 @@
     deleteRound,
     MAX_ROUNDS,
     MAX_TIMER_SECONDS,
+    RAPID_TIMER_SECONDS,
     moveRound,
     updateQuestion,
     updateRound,
@@ -88,6 +89,7 @@
     if (pendingDelete) {
       const { id } = pendingDelete;
       commit(() => deleteRound(quiz, id));
+      editing = null;
     }
     pendingDelete = null;
   }
@@ -168,7 +170,7 @@
             <input
               type="number"
               min="1"
-              max={selected.type === 'rapid' ? undefined : MAX_TIMER_SECONDS}
+              max={selected.type === 'rapid' ? RAPID_TIMER_SECONDS : MAX_TIMER_SECONDS}
               value={selected.timerSeconds}
               onchange={(e) => retime(selected, e.currentTarget)}
             />

@@ -4,7 +4,7 @@
   import Button from '../../components/Button.svelte';
   import Field from '../../components/Field.svelte';
   import { findDuplicate } from '../../lib/domain/duplicate';
-import { correctOptionProblem, OPTION_LETTERS } from '../../lib/domain/options';
+  import { correctOptionProblem, OPTION_LETTERS } from '../../lib/domain/options';
   import type { Question, QuestionDraft, Quiz, Round } from '../../lib/domain/types';
   import { importPicture, pictureSrc } from '../../lib/pictures';
 
@@ -48,7 +48,7 @@ import { correctOptionProblem, OPTION_LETTERS } from '../../lib/domain/options';
 
   function toDraft(): QuestionDraft {
     const options = fields.options.map((option) => option.trim());
-    const hasOptions = options.some(Boolean);
+    const hasOptions = !isPicture && options.some(Boolean);
     return {
       en: fields.en.trim(),
       hi: fields.hi.trim(),
@@ -63,7 +63,7 @@ import { correctOptionProblem, OPTION_LETTERS } from '../../lib/domain/options';
   function missingPart(draft: QuestionDraft): string | null {
     if (isPicture) return draft.image ? null : 'Choose a picture first';
     if (!draft.en && !draft.hi) return 'Type the question in English or Hindi first';
-    const problem = correctOptionProblem(draft.options, fields.correctOption);
+    const problem = correctOptionProblem(draft.options, draft.correctOption);
     return problem && `Fix the options: ${problem}`;
   }
 
