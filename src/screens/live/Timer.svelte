@@ -30,7 +30,7 @@
     position: relative;
     width: 12rem;
     aspect-ratio: 1;
-    color: var(--highlight, currentColor);
+    color: var(--accent);
   }
 
   svg {

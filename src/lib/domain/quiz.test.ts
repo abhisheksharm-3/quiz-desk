@@ -25,13 +25,17 @@ describe('limits', () => {
   it('allows 10 teams and refuses the 11th', () => {
     const quiz = newQuiz();
     for (let i = 0; i < 10; i++) addTeam(quiz, `Team ${i}`);
-    expect(() => addTeam(quiz, 'Extra')).toThrow(new QuizRuleError('A quiz can have at most 10 teams'));
+    const act = () => addTeam(quiz, 'Extra');
+    expect(act).toThrow(QuizRuleError);
+    expect(act).toThrow('A quiz can have at most 10 teams');
   });
 
   it('allows 7 rounds and refuses the 8th', () => {
     const quiz = newQuiz();
     for (let i = 0; i < 7; i++) addRound(quiz, `Round ${i}`, 'standard');
-    expect(() => addRound(quiz, 'Extra', 'standard')).toThrow('A quiz can have at most 7 rounds');
+    const act = () => addRound(quiz, 'Extra', 'standard');
+    expect(act).toThrow(QuizRuleError);
+    expect(act).toThrow('A quiz can have at most 7 rounds');
   });
 
   it('caps the timer at 30 seconds for non-rapid rounds only', () => {
@@ -39,9 +43,9 @@ describe('limits', () => {
     const standard = addRound(quiz, 'S', 'standard');
     const rapid = addRound(quiz, 'R', 'rapid');
     expect(rapid.timerSeconds).toBe(60);
-    expect(() => updateRound(quiz, standard.id, { timerSeconds: 45 })).toThrow(
-      'The timer can be at most 30 seconds',
-    );
+    const act = () => updateRound(quiz, standard.id, { timerSeconds: 45 });
+    expect(act).toThrow(QuizRuleError);
+    expect(act).toThrow('The timer can be at most 30 seconds');
     expect(standard.timerSeconds).toBe(30);
     updateRound(quiz, rapid.id, { timerSeconds: 45 });
     expect(rapid.timerSeconds).toBe(45);
@@ -59,9 +63,9 @@ describe('limits', () => {
   it.each([0, -5, 2.5, NaN])('refuses the timer %s', (timerSeconds) => {
     const quiz = newQuiz();
     const round = addRound(quiz, 'S', 'standard');
-    expect(() => updateRound(quiz, round.id, { timerSeconds })).toThrow(
-      'The timer must be a whole number of at least 1 second',
-    );
+    const act = () => updateRound(quiz, round.id, { timerSeconds });
+    expect(act).toThrow(QuizRuleError);
+    expect(act).toThrow('The timer must be a whole number of at least 1 second');
     expect(round.timerSeconds).toBe(30);
   });
 });
@@ -72,9 +76,9 @@ describe('scores', () => {
     const team = addTeam(quiz, 'A');
     const round = addRound(quiz, 'S', 'standard');
     addScore(quiz, { roundId: round.id, teamId: team.id, questionId: null, points: 10 }, 1);
-    expect(() => deleteTeam(quiz, team.id)).toThrow(
-      'This team has scores. Rename it instead of deleting it',
-    );
+    const act = () => deleteTeam(quiz, team.id);
+    expect(act).toThrow(QuizRuleError);
+    expect(act).toThrow('This team has scores. Rename it instead of deleting it');
     expect(quiz.teams).toHaveLength(1);
   });
 
