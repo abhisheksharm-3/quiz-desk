@@ -1,5 +1,6 @@
-<!-- Every team with its running total; the current team carries the accent label, pickable teams are buttons, locked teams are dimmed. -->
+<!-- Compact row of team chips with running totals; the current team carries the accent, pickable teams are buttons, locked teams are dimmed. -->
 <script lang="ts">
+  import Kbd from '../../components/Kbd.svelte';
   import type { Team } from '../../lib/domain/types';
 
   let {
@@ -33,7 +34,7 @@
         onclick={() => onpick(index)}
       >
         <span class="name">
-          {#if keyed}<kbd>{(index + 1) % 10}</kbd>{/if}
+          {#if keyed}<Kbd key={String((index + 1) % 10)} />{/if}
           {team.name}
         </span>
         <span class="total">{totals[index]}</span>
@@ -46,20 +47,26 @@
   .strip {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: var(--space-2);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  li {
+    min-width: 0;
+  }
+
   button {
-    display: grid;
-    gap: var(--space-1);
-    min-width: 8rem;
-    padding: var(--space-2) var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    max-width: 22rem;
+    padding: 0 var(--space-3);
     border: 2px solid var(--line);
     border-radius: var(--radius);
-    background: transparent;
+    background: var(--surface);
     color: var(--fg);
     font: inherit;
     text-align: start;
@@ -75,15 +82,6 @@
     text-decoration: line-through;
   }
 
-  kbd {
-    margin-inline-end: var(--space-1);
-    padding: 0 var(--space-1);
-    border: 1px solid currentColor;
-    border-radius: var(--radius);
-    font: inherit;
-    font-size: var(--step--1);
-  }
-
   .current {
     border-color: var(--accent);
     background: var(--accent-bg);
@@ -91,15 +89,16 @@
   }
 
   .name {
+    min-width: 0;
     font-size: var(--step-0);
     font-weight: 600;
+    line-height: 1.2;
     overflow-wrap: anywhere;
   }
 
   .total {
-    font-size: var(--step-3);
+    font-size: var(--step-1);
     font-weight: 800;
-    line-height: 1;
     font-variant-numeric: tabular-nums;
   }
 </style>

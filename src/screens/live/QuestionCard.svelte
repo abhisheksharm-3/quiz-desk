@@ -1,10 +1,13 @@
-<!-- The question on stage: picture, text, options. The answer, correct option and verdict render only when a result is passed. -->
+<!-- The question on stage: picture, text, options. The answer, correct option and verdict render only when a result is passed. Text shrinks until everything fits. -->
 <script lang="ts">
+  import { fitContent } from '../../lib/fit';
   import { OPTION_LETTERS } from '../../lib/domain/options';
   import { answerLines, visibleText } from '../../lib/domain/questions';
   import type { Points, Question, Quiz } from '../../lib/domain/types';
   import { pictureSrc } from '../../lib/pictures';
   import ResultBanner from './ResultBanner.svelte';
+
+  const LONG_OPTION_LENGTH = 38;
 
   let {
     question,
@@ -18,11 +21,12 @@
 
   const text = $derived(visibleText(question, mode));
   const options = $derived(question.options?.map((label, index) => ({ letter: OPTION_LETTERS[index], label })).filter((option) => option.label.trim()) ?? []);
+  const hasLongOption = $derived(options.some((option) => option.label.length > LONG_OPTION_LENGTH));
 
   const answer = $derived(answerLines(question, mode));
 </script>
 
-<article class="card">
+<article class="card" {@attach fitContent}>
   {#if question.image}
     <img src={pictureSrc(question.image)} alt="Question illustration" />
   {/if}
@@ -33,11 +37,11 @@
     </div>
   {/if}
   {#if options.length}
-    <ol class="options">
+    <ol class="options" class:single={hasLongOption}>
       {#each options as option (option.letter)}
         <li class:right={result && option.letter === question.correctOption}>
           <span class="letter">{option.letter}</span>
-          <span>{option.label}</span>
+          <span class="label">{option.label}</span>
           {#if result && option.letter === question.correctOption}<span class="sr">, correct answer</span>{/if}
         </li>
       {/each}
@@ -52,8 +56,10 @@
   .card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    justify-content: center;
+    gap: calc(var(--space-4) * var(--fit, 1));
     min-height: 0;
+    overflow-y: auto;
   }
 
   img {
@@ -65,41 +71,52 @@
   }
 
   .line {
-    font-size: var(--step-5);
+    font-size: calc(var(--step-5) * var(--fit, 1));
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
   }
 
   .line:lang(hi) {
-    line-height: 1.6;
+    line-height: 1.5;
+    letter-spacing: 0;
   }
 
   .text {
     display: grid;
-    gap: var(--space-2);
+    gap: calc(var(--space-2) * var(--fit, 1));
   }
 
   .options {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-2) var(--space-4);
+    gap: calc(var(--space-3) * var(--fit, 1));
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: var(--step-3);
+    font-size: calc(var(--step-3) * var(--fit, 1));
+  }
+
+  .options.single {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .options li {
     display: flex;
-    gap: var(--space-3);
+    gap: 0.5em;
     align-items: baseline;
-    padding: var(--space-2) var(--space-3);
+    padding: 0.3em 0.6em;
     border: 2px solid var(--line);
     border-radius: var(--radius);
+    background: var(--surface);
+    line-height: 1.25;
     overflow-wrap: anywhere;
   }
 
   .letter {
+    flex: none;
+    min-width: 1.2em;
     color: var(--accent);
     font-weight: 800;
   }

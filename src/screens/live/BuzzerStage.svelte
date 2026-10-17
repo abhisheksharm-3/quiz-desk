@@ -3,7 +3,7 @@
   import Button from '../../components/Button.svelte';
   import { buzzerReducer, type BuzzerAction, type BuzzerState } from '../../lib/domain/buzzer';
   import { nextQuestion } from '../../lib/domain/questions';
-    import type { Points, Quiz, Round } from '../../lib/domain/types';
+  import type { Points, Quiz, Round } from '../../lib/domain/types';
   import * as sound from '../../lib/sound';
   import type { Command } from './ControlBar.svelte';
   import QuestionCard from './QuestionCard.svelte';
@@ -36,7 +36,7 @@
       : null,
   );
   const status = $derived.by(() => {
-    if (buzzer.phase === 'open') return 'Buzzers open';
+    if (buzzer.phase === 'open') return 'Buzzers open, press a team number';
     if (buzzer.phase === 'answering') return `${quiz.teams[buzzer.team].name} is answering`;
     return null;
   });
@@ -96,9 +96,9 @@
   const scoreCommands: Command[] = $derived(
     answering
       ? [
-          { key: 'enter', keyLabel: 'Enter', text: 'Right +10', variant: 'primary', disabled: false, run: () => right(10) },
+          { key: 'enter', keyLabel: 'Enter', text: '✓ Right +10', variant: 'primary', slot: 'bar', disabled: false, run: () => right(10) },
+          { key: 'backspace', keyLabel: 'Backspace', text: '✗ Wrong −5', variant: 'danger', slot: 'bar', disabled: false, run: () => wrong(-5) },
           { key: 'r', keyLabel: 'R', text: 'Right +5', disabled: false, run: () => right(5) },
-          { key: 'backspace', keyLabel: 'Backspace', text: 'Wrong −5', variant: 'danger', disabled: false, run: () => wrong(-5) },
           { key: 'w', keyLabel: 'W', text: 'Wrong −10', variant: 'danger', disabled: false, run: () => wrong(-10) },
           { key: 'n', keyLabel: 'N', text: 'Wrong, no penalty', disabled: false, run: () => wrong(0) },
         ]
@@ -109,24 +109,26 @@
     {
       key: ' ',
       keyLabel: 'Space',
-      text: buzzer.phase === 'result' ? 'Next question' : 'Start',
+      text: buzzer.phase === 'result' ? 'Next question' : 'Start question',
       variant: 'primary',
+      slot: 'bar',
       disabled: buzzer.phase === 'result' ? false : buzzer.phase !== 'idle' || !question,
       run: () => (buzzer.phase === 'result' ? send({ type: 'next' }) : void start()),
     },
     ...scoreCommands,
-    { key: 'e', keyLabel: 'E', text: 'End question', disabled: buzzer.phase !== 'open' && !answering, run: end },
+    { key: 'e', keyLabel: 'E', text: buzzer.phase === 'open' ? 'No buzz, end question' : 'End question', slot: buzzer.phase === 'open' ? 'bar' : undefined, disabled: buzzer.phase !== 'open' && !answering, run: end },
     stage.undoCommand(),
     stage.muteCommand(),
     {
       key: 'escape',
       keyLabel: 'Esc',
-      text: 'Round board',
+      text: 'Back to rounds',
       disabled: buzzer.phase === 'open' || buzzer.phase === 'answering' || buzzer.phase === 'countdown',
       run: onback,
     },
   ]);
 
+  const asked = $derived(round.questions.filter((candidate) => candidate.askedAt !== null).length);
 </script>
 
 <StageFrame
@@ -140,15 +142,20 @@
   status={status ?? stage.notice}
   onpick={buzz}
 >
+  {#snippet timer()}
+    {#if buzzer.phase !== 'idle'}
+      <Timer left={countdown.left} total={round.timerSeconds} />
+    {/if}
+  {/snippet}
   {#if buzzer.phase === 'idle' && !question}
     <div class="notice">
       <h2>No questions left in this round</h2>
-      <Button type="button" variant="primary" onclick={onback}>Back to round board</Button>
+      <Button type="button" variant="primary" size="large" onclick={onback}>Back to rounds</Button>
     </div>
   {:else if buzzer.phase === 'idle'}
     <div class="notice">
       <h2>Buzzer question</h2>
-      <p>{round.questions.filter((candidate) => candidate.askedAt === null).length} of {round.questions.length} left</p>
+      <p>Question {asked + 1} of {round.questions.length}. The first team to buzz answers.</p>
     </div>
   {:else if buzzer.phase === 'countdown'}
     <div class="notice">
@@ -156,8 +163,5 @@
     </div>
   {:else if shown}
     <QuestionCard question={shown} mode={quiz.languageMode} {result} />
-  {/if}
-  {#if buzzer.phase !== 'idle'}
-    <Timer left={countdown.left} total={round.timerSeconds} />
   {/if}
 </StageFrame>

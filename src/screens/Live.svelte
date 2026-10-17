@@ -21,7 +21,7 @@
   <main class="notice">
     <h1>This quiz has no teams</h1>
     <p>Add the teams in setup, then run the quiz.</p>
-    <Button type="button" variant="primary" onclick={() => go({ screen: 'setup', quizId })}>Open setup</Button>
+    <Button type="button" variant="primary" onclick={() => go({ screen: 'setup', quizId, step: 'teams' })}>Add teams</Button>
   </main>
 {:else if !round}
   <RoundBoard {quiz} onopen={(id) => go({ screen: 'live', quizId, roundId: id })} onscores={() => go({ screen: 'scores', quizId })} onback={toHome} />

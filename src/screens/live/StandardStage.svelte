@@ -91,34 +91,41 @@
     {
       key: ' ',
       keyLabel: 'Space',
-      text: turn.phase === 'result' ? 'Next question' : 'Start',
+      text: turn.phase === 'result' ? 'Next question' : 'Start question',
       variant: 'primary',
+      slot: 'bar',
       disabled: turn.phase === 'result' ? false : turn.phase !== 'idle' || !question,
       run: () => (turn.phase === 'result' ? send({ type: 'next' }) : void start()),
     },
-    { key: '1', keyLabel: '1', text: 'Right +10', variant: suggested === 10 ? 'primary' : 'quiet', disabled: turn.phase !== 'asking', run: () => right(10) },
-    { key: '2', keyLabel: '2', text: 'Right +5', variant: suggested === 5 ? 'primary' : 'quiet', disabled: turn.phase !== 'asking', run: () => right(5) },
-    { key: 'p', keyLabel: 'P', text: 'Pass', disabled: turn.phase !== 'asking', run: pass },
-    { key: 'e', keyLabel: 'E', text: 'End question', disabled: turn.phase !== 'asking', run: end },
+    { key: '1', keyLabel: '1', text: '✓ Right +10', variant: 'primary', slot: suggested === 10 ? 'bar' : undefined, disabled: turn.phase !== 'asking', run: () => right(10) },
+    { key: '2', keyLabel: '2', text: '✓ Right +5', variant: 'primary', slot: suggested === 5 ? 'bar' : undefined, disabled: turn.phase !== 'asking', run: () => right(5) },
+    { key: 'p', keyLabel: 'P', text: 'Pass →', slot: 'bar', disabled: turn.phase !== 'asking', run: pass },
+    { key: 'e', keyLabel: 'E', text: '✗ Wrong', variant: 'danger', slot: 'bar', disabled: turn.phase !== 'asking', run: end },
     { key: '3', keyLabel: '3', text: 'Penalty −5', variant: 'danger', disabled: scoringTeam === null, run: () => penalty(-5) },
     { key: '4', keyLabel: '4', text: 'Penalty −10', variant: 'danger', disabled: scoringTeam === null, run: () => penalty(-10) },
     { ...stage.undoCommand(), run: undo },
     stage.muteCommand(),
-    { key: 'escape', keyLabel: 'Esc', text: 'Round board', disabled: turn.phase === 'asking' || turn.phase === 'countdown', run: onback },
+    { key: 'escape', keyLabel: 'Esc', text: 'Back to rounds', disabled: turn.phase === 'asking' || turn.phase === 'countdown', run: onback },
   ]);
 
+  const asked = $derived(round.questions.filter((candidate) => candidate.askedAt !== null).length);
 </script>
 
 <StageFrame {quiz} {round} {commands} current={currentTeam} pickable={turn.phase === 'idle'} status={stage.notice} onpick={(team) => send({ type: 'pickTeam', team })}>
+  {#snippet timer()}
+    {#if turn.phase !== 'idle'}
+      <Timer left={countdown.left} total={round.timerSeconds} />
+    {/if}
+  {/snippet}
   {#if turn.phase === 'idle' && !question}
     <div class="notice">
       <h2>No questions left in this round</h2>
-      <Button type="button" variant="primary" onclick={onback}>Back to round board</Button>
+      <Button type="button" variant="primary" size="large" onclick={onback}>Back to rounds</Button>
     </div>
   {:else if turn.phase === 'idle'}
     <div class="notice">
       <h2>{quiz.teams[turn.nextTeam].name} is up</h2>
-      <p>{round.questions.filter((candidate) => candidate.askedAt === null).length} of {round.questions.length} left</p>
+      <p>Question {asked + 1} of {round.questions.length}</p>
     </div>
   {:else if turn.phase === 'countdown'}
     <div class="notice">
@@ -126,9 +133,6 @@
     </div>
   {:else if shown}
     <QuestionCard question={shown} mode={quiz.languageMode} {result} />
-  {/if}
-  {#if turn.phase !== 'idle'}
-    <Timer left={countdown.left} total={round.timerSeconds} />
   {/if}
 </StageFrame>
 

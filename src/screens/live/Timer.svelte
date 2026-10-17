@@ -28,7 +28,8 @@
 <style>
   .timer {
     position: relative;
-    width: 12rem;
+    --size: clamp(4.5rem, 11vh, 9rem);
+    width: var(--size);
     aspect-ratio: 1;
     color: var(--accent);
   }
@@ -58,7 +59,7 @@
     inset: 0;
     display: grid;
     place-items: center;
-    font-size: 5rem;
+    font-size: calc(var(--size) * 0.42);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }

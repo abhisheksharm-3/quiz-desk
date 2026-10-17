@@ -80,8 +80,9 @@
     {
       key: ' ',
       keyLabel: 'Space',
-      text: rapid.phase === 'done' ? (isLastTeam ? 'Round board' : 'Next team') : 'Start',
+      text: rapid.phase === 'done' ? (isLastTeam ? 'Back to rounds' : 'Next team') : 'Start clock',
       variant: 'primary',
+      slot: 'bar',
       disabled: rapid.phase === 'running' || starting || (rapid.phase === 'ready' && !question),
       run: () => {
         if (rapid.phase === 'ready') void start();
@@ -89,18 +90,28 @@
         else nextTeam();
       },
     },
-    { key: 'arrowright', keyLabel: '→', text: 'Right +1', variant: 'primary', disabled: rapid.phase !== 'running', run: () => mark(true) },
-    { key: 'arrowleft', keyLabel: '←', text: 'Wrong −1', variant: 'danger', disabled: rapid.phase !== 'running', run: () => mark(false) },
+    { key: 'arrowright', keyLabel: '→', text: '✓ Right +1', variant: 'primary', slot: 'bar', disabled: rapid.phase !== 'running', run: () => mark(true) },
+    { key: 'arrowleft', keyLabel: '←', text: '✗ Wrong −1', variant: 'danger', slot: 'bar', disabled: rapid.phase !== 'running', run: () => mark(false) },
     stage.muteCommand(),
-    { key: 'escape', keyLabel: 'Esc', text: 'Round board', disabled: rapid.phase === 'running' || starting, run: onback },
+    { key: 'escape', keyLabel: 'Esc', text: 'Back to rounds', disabled: rapid.phase === 'running' || starting, run: onback },
   ]);
 </script>
 
 <StageFrame {quiz} {round} {commands} current={rapid.team} pickable={false} onpick={() => {}}>
+  {#snippet timer()}
+    {#if rapid.phase === 'running'}
+      {#if tally}
+        <p class="tally" aria-label="{tally.right} right, {tally.wrong} wrong, {tally.right - tally.wrong} points">
+          ✓ {tally.right}&nbsp; ✗ {tally.wrong}&nbsp; = {tally.right - tally.wrong}
+        </p>
+      {/if}
+      <Timer left={countdown.left} total={round.timerSeconds} />
+    {/if}
+  {/snippet}
   {#if rapid.phase === 'ready' && !question}
     <div class="notice">
       <h2>No questions left in this round</h2>
-      <Button type="button" variant="primary" onclick={onback}>Back to round board</Button>
+      <Button type="button" variant="primary" size="large" onclick={onback}>Back to rounds</Button>
     </div>
   {:else if rapid.phase === 'ready'}
     <div class="notice">
@@ -124,29 +135,14 @@
       {/if}
     </div>
   {/if}
-  {#if rapid.phase === 'running'}
-    <div class="clock">
-      <Timer left={countdown.left} total={round.timerSeconds} />
-      {#if tally}
-        <p class="tally" aria-label="{tally.right} right, {tally.wrong} wrong, {tally.right - tally.wrong} points">
-          ✓ {tally.right}&nbsp; ✗ {tally.wrong}&nbsp; = {tally.right - tally.wrong}
-        </p>
-      {/if}
-    </div>
-  {/if}
 </StageFrame>
 
 <style>
   .live {
     display: grid;
-    gap: var(--space-4);
-    align-content: start;
-  }
-
-  .clock {
-    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
     gap: var(--space-3);
-    justify-items: center;
+    min-height: 0;
   }
 
   .tally {
@@ -154,6 +150,7 @@
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    color: var(--fg);
   }
 
   .previous {
@@ -161,7 +158,7 @@
     flex-wrap: wrap;
     gap: var(--space-1) var(--space-3);
     color: var(--wrong);
-    font-size: var(--step-0);
+    font-size: var(--step-2);
   }
 
   .previous.right {
