@@ -3,7 +3,10 @@
 const BEEP_HZ = 880;
 const PIP_HZ = [440, 523, 659];
 const LONG_TONE_HZ = 880;
+const LONG_TONE_START_S = 2.2;
 const START_TONE_MS = 3000;
+const RIGHT_HZ = [523, 784];
+const WRONG_HZ = 196;
 
 let context: AudioContext | null = null;
 let muted = false;
@@ -32,10 +35,10 @@ export function setMuted(value: boolean): void {
   muted = value;
 }
 
-/** Three rising pips at 0, 1 and 2 seconds, then a long tone. Resolves after 3 seconds even when muted. */
+/** Three rising pips at 0, 1 and 2 seconds, then a long tone from 2.2 seconds. Resolves after 3 seconds even when muted. */
 export function startTone(): Promise<void> {
   PIP_HZ.forEach((hz, second) => tone(hz, second, 0.2));
-  tone(LONG_TONE_HZ, 2, 1, 0.35);
+  tone(LONG_TONE_HZ, LONG_TONE_START_S, START_TONE_MS / 1000 - LONG_TONE_START_S, 0.35);
   return new Promise((resolve) => setTimeout(resolve, START_TONE_MS));
 }
 
@@ -44,10 +47,10 @@ export function beep(): void {
 }
 
 export function right(): void {
-  tone(523, 0, 0.15);
-  tone(784, 0.15, 0.3);
+  tone(RIGHT_HZ[0], 0, 0.15);
+  tone(RIGHT_HZ[1], 0.15, 0.3);
 }
 
 export function wrong(): void {
-  tone(196, 0, 0.5, 0.35);
+  tone(WRONG_HZ, 0, 0.5, 0.35);
 }

@@ -80,7 +80,7 @@ export function addRound(quiz: Quiz, name: string, type: RoundType): Round {
     id: crypto.randomUUID(),
     name,
     type,
-    timerSeconds: type === 'rapid' ? RAPID_TIMER_SECONDS : DEFAULT_TIMER_SECONDS,
+    timerSeconds: defaultTimerSeconds(type),
     questions: [],
   };
   quiz.rounds.push(round);
@@ -93,11 +93,17 @@ export function updateRound(
   patch: Partial<Pick<Round, 'name' | 'type' | 'timerSeconds'>>,
 ): void {
   const round = findRound(quiz, roundId);
-  const next = { ...round, ...patch };
-  if (next.type !== 'rapid' && next.timerSeconds > MAX_TIMER_SECONDS) {
+  const type = patch.type ?? round.type;
+  const changesType = type !== round.type;
+  const timerSeconds =
+    patch.timerSeconds ?? (changesType ? defaultTimerSeconds(type) : round.timerSeconds);
+  if (!Number.isInteger(timerSeconds) || timerSeconds < 1) {
+    throw new QuizRuleError('The timer must be a whole number of at least 1 second');
+  }
+  if (type !== 'rapid' && timerSeconds > MAX_TIMER_SECONDS) {
     throw new QuizRuleError(`The timer can be at most ${MAX_TIMER_SECONDS} seconds`);
   }
-  Object.assign(round, next);
+  Object.assign(round, patch, { type, timerSeconds });
 }
 
 export function deleteRound(quiz: Quiz, roundId: string): void {
@@ -153,6 +159,10 @@ export function addScore(
 
 export function undoLastScore(quiz: Quiz): ScoreEntry | null {
   return quiz.scores.pop() ?? null;
+}
+
+function defaultTimerSeconds(type: RoundType): number {
+  return type === 'rapid' ? RAPID_TIMER_SECONDS : DEFAULT_TIMER_SECONDS;
 }
 
 function findTeam(quiz: Quiz, teamId: string): Team {

@@ -46,6 +46,24 @@ describe('limits', () => {
     updateRound(quiz, rapid.id, { timerSeconds: 45 });
     expect(rapid.timerSeconds).toBe(45);
   });
+
+  it('resets the timer to the new type default when the type changes', () => {
+    const quiz = newQuiz();
+    const rapid = addRound(quiz, 'R', 'rapid');
+    updateRound(quiz, rapid.id, { type: 'standard' });
+    expect(rapid.timerSeconds).toBe(30);
+    updateRound(quiz, rapid.id, { type: 'rapid' });
+    expect(rapid.timerSeconds).toBe(60);
+  });
+
+  it.each([0, -5, 2.5, NaN])('refuses the timer %s', (timerSeconds) => {
+    const quiz = newQuiz();
+    const round = addRound(quiz, 'S', 'standard');
+    expect(() => updateRound(quiz, round.id, { timerSeconds })).toThrow(
+      'The timer must be a whole number of at least 1 second',
+    );
+    expect(round.timerSeconds).toBe(30);
+  });
 });
 
 describe('scores', () => {

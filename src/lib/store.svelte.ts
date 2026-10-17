@@ -8,6 +8,7 @@ const storage = pickStorage();
 let pendingSave: Promise<void> = Promise.resolve();
 
 export const app: AppData = $state(emptyAppData());
+export const saveStatus = $state({ failed: false });
 
 export async function initStore(): Promise<void> {
   const saved = await storage.load();
@@ -20,7 +21,13 @@ export function commit(mutate: (data: AppData) => void): void {
   const snapshot = $state.snapshot(app);
   pendingSave = pendingSave
     .then(() => storage.save(snapshot))
-    .catch((error) => console.error('Saving quiz data failed', error));
+    .then(() => {
+      saveStatus.failed = false;
+    })
+    .catch((error) => {
+      saveStatus.failed = true;
+      console.error('Saving quiz data failed', error);
+    });
 }
 
 export function quizById(id: string): Quiz {

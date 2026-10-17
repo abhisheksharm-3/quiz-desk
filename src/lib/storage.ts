@@ -8,17 +8,10 @@ export interface Storage {
   save(data: AppData): Promise<void>;
 }
 
-export interface FsApi {
-  writeTextFile(path: string, contents: string, options: { baseDir: BaseDirectory }): Promise<void>;
-  rename(
-    from: string,
-    to: string,
-    options: { oldPathBaseDir: BaseDirectory; newPathBaseDir: BaseDirectory },
-  ): Promise<void>;
-  readTextFile(path: string, options: { baseDir: BaseDirectory }): Promise<string>;
-  exists(path: string, options: { baseDir: BaseDirectory }): Promise<boolean>;
-  mkdir(path: string, options: { baseDir: BaseDirectory; recursive: boolean }): Promise<void>;
-}
+export type FsApi = Pick<
+  typeof import('@tauri-apps/plugin-fs'),
+  'writeTextFile' | 'rename' | 'readTextFile' | 'exists' | 'mkdir'
+>;
 
 const FILE_NAME = 'quiz-desk.json';
 const TEMP_NAME = `${FILE_NAME}.tmp`;

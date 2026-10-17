@@ -8,18 +8,18 @@ function memoryFs() {
   const fs: FsApi = {
     async writeTextFile(path, contents) {
       calls.push(`write ${path}`);
-      files.set(path, contents);
+      files.set(String(path), contents);
     },
     async rename(from, to) {
       calls.push(`rename ${from} ${to}`);
-      files.set(to, files.get(from)!);
-      files.delete(from);
+      files.set(String(to), files.get(String(from))!);
+      files.delete(String(from));
     },
     async readTextFile(path) {
-      return files.get(path)!;
+      return files.get(String(path))!;
     },
     async exists(path) {
-      return files.has(path);
+      return files.has(String(path));
     },
     async mkdir() {},
   };
