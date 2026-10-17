@@ -3,8 +3,9 @@
   import Button from './components/Button.svelte';
   import Home from './screens/Home.svelte';
   import Live from './screens/Live.svelte';
+  import Scores from './screens/Scores.svelte';
   import Setup from './screens/Setup.svelte';
-  import { go, nav } from './lib/nav.svelte';
+  import { nav } from './lib/nav.svelte';
   import { app, initStore, saveStatus } from './lib/store.svelte';
 
   let loading: Promise<void> = $state(initStore());
@@ -33,10 +34,7 @@
   {:else if nav.screen === 'live'}
     <Live quizId={nav.quizId} roundId={nav.roundId} />
   {:else}
-    <main class="state">
-      <h1>This screen is not built yet</h1>
-      <Button type="button" variant="primary" onclick={() => go({ screen: 'home' })}>Back to quizzes</Button>
-    </main>
+    <Scores quizId={nav.quizId} />
   {/if}
 {:catch}
   <main class="state" role="alert">

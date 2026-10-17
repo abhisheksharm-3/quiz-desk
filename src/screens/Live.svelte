@@ -24,7 +24,7 @@
     <Button type="button" variant="primary" onclick={() => go({ screen: 'setup', quizId })}>Open setup</Button>
   </main>
 {:else if !round}
-  <RoundBoard {quiz} onopen={(id) => go({ screen: 'live', quizId, roundId: id })} onback={toHome} />
+  <RoundBoard {quiz} onopen={(id) => go({ screen: 'live', quizId, roundId: id })} onscores={() => go({ screen: 'scores', quizId })} onback={toHome} />
 {:else if round.type === 'standard' || round.type === 'picture'}
   {#key round.id}
     <StandardStage {quiz} {round} onback={toBoard} />

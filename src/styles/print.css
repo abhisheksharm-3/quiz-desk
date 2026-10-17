@@ -1,0 +1,31 @@
+/* Print media: the live screens are hidden and the print views show black on white. */
+
+@media screen {
+  .print-only {
+    display: none;
+  }
+}
+
+@media print {
+  :root,
+  :root[data-theme='orange'] {
+    color-scheme: light;
+    --bg: white;
+    --fg: black;
+    --muted: oklch(0.35 0 0);
+    --line: oklch(0.55 0 0);
+    --accent: black;
+    --accent-fg: black;
+    --accent-bg: transparent;
+    --wrong: black;
+    --right: black;
+  }
+
+  .screen-only {
+    display: none !important;
+  }
+
+  @page {
+    margin: 15mm;
+  }
+}

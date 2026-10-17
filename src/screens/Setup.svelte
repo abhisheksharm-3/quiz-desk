@@ -6,6 +6,7 @@
   import { readyCheck } from '../lib/domain/ready';
   import { go } from '../lib/nav.svelte';
   import { commit, quizById } from '../lib/store.svelte';
+  import AnswerKey from './print/AnswerKey.svelte';
   import Details from './setup/Details.svelte';
   import Rounds from './setup/Rounds.svelte';
   import Teams from './setup/Teams.svelte';
@@ -45,10 +46,11 @@
   }
 </script>
 
-<main>
+<main class="screen-only">
   <header>
     <Button type="button" onclick={() => go({ screen: 'home' })}>Back to quizzes</Button>
     <h1>{quiz.title}</h1>
+    <Button type="button" onclick={() => window.print()}>Print answer key</Button>
   </header>
 
   <div role="tablist" aria-label="Quiz setup">
@@ -98,6 +100,8 @@
     {/if}
   </div>
 </main>
+
+<AnswerKey {quiz} />
 
 <Dialog bind:open={confirmingReset} title="Reset asked questions?">
   <p>Every question in this quiz becomes available again. Use this to rehearse. Scores are kept.</p>

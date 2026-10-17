@@ -1,6 +1,7 @@
 <!-- Shared frame of every round stage: title bar, the stage body, the status line, the team strip, the control bar and the keys. -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { buildSheet } from '../../lib/domain/scoresheet';
   import type { Quiz, Round } from '../../lib/domain/types';
   import ControlBar, { type Command } from './ControlBar.svelte';
   import TeamStrip from './TeamStrip.svelte';
@@ -29,11 +30,7 @@
     children: Snippet;
   } = $props();
 
-  const totals = $derived(
-    quiz.teams.map((team) =>
-      quiz.scores.filter((score) => score.teamId === team.id).reduce((sum, score) => sum + score.points, 0),
-    ),
-  );
+  const totals = $derived(buildSheet(quiz).totals);
 
   function onKeydown(event: KeyboardEvent): void {
     const key = event.key.toLowerCase();

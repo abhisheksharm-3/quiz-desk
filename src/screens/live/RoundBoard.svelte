@@ -7,18 +7,31 @@
   let {
     quiz,
     onopen,
+    onscores,
     onback,
-  }: { quiz: Quiz; onopen: (roundId: string) => void; onback: () => void } = $props();
+  }: { quiz: Quiz; onopen: (roundId: string) => void; onscores: () => void; onback: () => void } =
+    $props();
+
+  function onKeydown(event: KeyboardEvent): void {
+    if (event.key.toLowerCase() !== 's' || event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+    event.preventDefault();
+    onscores();
+  }
 
   function left(round: Quiz['rounds'][number]): number {
     return round.questions.filter((question) => question.askedAt === null).length;
   }
 </script>
 
+<svelte:window onkeydown={onKeydown} />
+
 <main class="board">
   <header>
     <h1>{quiz.title}</h1>
-    <Button type="button" onclick={onback}>Back to quizzes</Button>
+    <div class="tools">
+      <Button type="button" onclick={onscores}>Scores <kbd>S</kbd></Button>
+      <Button type="button" onclick={onback}>Back to quizzes</Button>
+    </div>
   </header>
   {#if quiz.rounds.length === 0}
     <section class="empty">
@@ -58,6 +71,22 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
+  }
+
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  kbd {
+    margin-inline-start: var(--space-2);
+    padding: 0 var(--space-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font: inherit;
+    font-size: var(--step--1);
   }
 
   ol {
