@@ -29,6 +29,11 @@
     adding = false;
   }
 
+  /** Saves a non-empty "Add new" draft; the form calls it on submit so a typed value is not lost. */
+  export function commitDraft() {
+    if (adding) confirmAdd();
+  }
+
   function confirmAdd() {
     const name = draft.trim();
     if (name) {
@@ -42,12 +47,7 @@
 </script>
 
 {#if adding}
-  <div
-    class="add"
-    onfocusout={(event) => {
-      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) confirmAdd();
-    }}
-  >
+  <div class="add">
     <Field label="New {label.toLowerCase()}">
       <input
         bind:value={draft}

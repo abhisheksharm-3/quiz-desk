@@ -11,8 +11,9 @@
 
   let creating = $state(false);
   let pendingDelete: Quiz | null = $state(null);
-  let confirmingDelete = $state(false);
   let draft = $state(blankDraft());
+  let levelField: SelectWithAdd;
+  let subjectField: SelectWithAdd;
 
   const dateFormat = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' });
 
@@ -27,13 +28,14 @@
 
   function submitCreate(event: SubmitEvent) {
     event.preventDefault();
+    levelField.commitDraft();
+    subjectField.commitDraft();
     commit((data) => createQuiz(data, { ...draft, title: draft.title.trim() }));
     creating = false;
   }
 
   function askDelete(quiz: Quiz) {
     pendingDelete = quiz;
-    confirmingDelete = true;
   }
 
   function confirmDelete() {
@@ -41,7 +43,7 @@
       const { id } = pendingDelete;
       commit((data) => deleteQuiz(data, id));
     }
-    confirmingDelete = false;
+    pendingDelete = null;
   }
 
   function setTheme(theme: 'yellow' | 'orange') {
@@ -123,15 +125,17 @@
 <Dialog bind:open={creating} title="New quiz">
   <form onsubmit={submitCreate}>
     <Field label="Title">
-      <input bind:value={draft.title} required autocomplete="off" />
+      <input bind:value={draft.title} autocomplete="off" />
     </Field>
     <SelectWithAdd
+      bind:this={levelField}
       label="Level"
       options={app.levels}
       bind:value={draft.level}
       onadd={(name) => commit((data) => data.levels.push(name))}
     />
     <SelectWithAdd
+      bind:this={subjectField}
       label="Subject"
       options={app.subjects}
       bind:value={draft.subject}
@@ -150,14 +154,16 @@
   </form>
 </Dialog>
 
-<Dialog bind:open={confirmingDelete} title="Delete this quiz?">
+<Dialog
+  bind:open={() => pendingDelete !== null, (isOpen) => !isOpen && (pendingDelete = null)}
+  title="Delete this quiz?">
   <p>
     {pendingDelete?.title} will be removed with its teams, rounds, questions and scores. This cannot be
     undone.
   </p>
   <div class="buttons">
-    <Button type="button" onclick={() => (confirmingDelete = false)}>Keep quiz</Button>
-    <Button type="button" variant="danger" bordered onclick={confirmDelete}>Delete quiz</Button>
+    <Button type="button" onclick={() => (pendingDelete = null)}>Keep quiz</Button>
+    <Button type="button" variant="danger" onclick={confirmDelete}>Delete quiz</Button>
   </div>
 </Dialog>
 
@@ -224,16 +230,6 @@
     font-size: var(--step--1);
     font-weight: 600;
     color: var(--muted);
-  }
-
-  :global(button[aria-pressed='true']) {
-    border-color: var(--accent);
-    background: var(--accent-bg);
-    color: var(--accent-fg);
-  }
-
-  :global(button[aria-pressed='true']::before) {
-    content: '✓ ';
   }
 
   ul {

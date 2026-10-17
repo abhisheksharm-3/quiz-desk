@@ -28,7 +28,7 @@ Yellow theme highlights are yellow text on black. Orange theme highlights are da
 
 One family designed for both scripts: Anek Latin (Latin) with Anek Devanagari (Hindi) as the fallback in the same stack, so mixed English and Hindi lines share weight and proportions. Numbers use `font-variant-numeric: tabular-nums`.
 
-Scale (`--step--1` to `--step-6`), fluid with `clamp()`. `--step-5` is the question size: 65 px at 1920 wide, never below 39 px at the 1024 minimum window. Body line length stays under 70ch; Devanagari gets `line-height: 1.5` because of its matras.
+Scale (`--step--1` to `--step-6`), fluid with `clamp()`. `--step-5` is the question size: 65 px at 1920 wide, never below 39 px at the 1024 minimum window. Body line length stays under 70ch; Devanagari gets `line-height: 1.6` because of its matras.
 
 | Token | Rough size at 1440 | Role |
 |---|---|---|
@@ -47,13 +47,13 @@ Hierarchy comes from size and weight (400 body, 600 emphasis, 800 display), not 
 
 - Spacing: `--space-1` 0.25rem, `--space-2` 0.5rem, `--space-3` 1rem, `--space-4` 1.5rem, `--space-5` 2.5rem, `--space-6` 4rem. Vary rhythm; do not use one padding everywhere.
 - Radius: `--radius` 0.5rem for controls and dialogs, `--radius-pill` for status labels.
-- Safe area: `--safe` 5vw horizontal and 5vh vertical on stage screens, so nothing important sits in the outer 5% (projector overscan).
+- Safe area: `--safe-x` 5vw horizontal and `--safe-y` 5vh vertical on stage screens, so nothing important sits in the outer 5% (projector overscan).
 - Motion: `transform` and `opacity` only, `--dur` 160 ms, `--ease-out` a quart curve. Never `transition: all`. `prefers-reduced-motion: reduce` removes all non-essential animation.
 - Focus: a 3 px `--accent` outline with offset on every interactive element, on any ground.
 
 ## Components
 
-- Button: native `button`, three variants. Primary (`--accent-fg` on `--accent-bg` with a 2 px `--accent` border), quiet (`--fg` on transparent with a `--line` border), danger (`--wrong` text and border). Minimum height 2.75rem. Disabled uses `disabled`, 45% opacity, no pointer.
+- Button: native `button`, three variants. Primary (`--accent-fg` on `--accent-bg` with a 2 px `--accent` border), quiet (`--fg` on transparent with a `--line` border), danger (`--wrong` text and a 2 px `--wrong` border). Minimum height 2.75rem. Disabled uses `disabled`, 45% opacity, no pointer.
 - Field: a visible label above a native input or select. Never a placeholder as the label.
 - Select with add: a native select whose last option is "Add new…", which swaps in a text input and an Add button.
 - Dialog: native `dialog` opened with `showModal()`, so focus is trapped and restored; Escape closes it.
