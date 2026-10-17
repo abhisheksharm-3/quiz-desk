@@ -1,0 +1,21 @@
+{
+  "mode": "custom",
+  "deadCode": "delete",
+  "backwardCompat": "none",
+  "architecture": {
+    "source": "polaris",
+    "reference": null,
+    "conventions": "Tauri 2 shell + Svelte 5 frontend. Pure TS rules in src/lib/domain (Vitest). Screens in src/screens. Docs under .polaris/."
+  },
+  "naming": {
+    "source": "polaris",
+    "rules": {}
+  },
+  "pr": {
+    "source": "polaris",
+    "standards": ""
+  },
+  "guardEdit": true,
+  "promptEnhance": false,
+  "routing": true
+}
