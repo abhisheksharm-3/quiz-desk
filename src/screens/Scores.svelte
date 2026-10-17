@@ -1,4 +1,4 @@
-<!-- Scores: the projector score sheet, rounds by teams with totals and ranks, live from the quiz data. -->
+<!-- Scores: the projector score sheet, teams ranked best first with their points per round and total, live from the quiz data. -->
 <script lang="ts">
   import Button from '../components/Button.svelte';
   import { buildSheet } from '../lib/domain/scoresheet';
@@ -11,16 +11,29 @@
   const quiz = $derived(quizById(quizId));
   const sheet = $derived(buildSheet(quiz));
   const anyScore = $derived(quiz.scores.length > 0);
+  const standings = $derived(
+    quiz.teams
+      .map((team, index) => ({
+        team,
+        byRound: sheet.rows.map((row) => row.byTeam[index]),
+        total: sheet.totals[index],
+        rank: sheet.ranks[index],
+      }))
+      .sort((a, b) => a.rank - b.rank),
+  );
 
   const toBoard = () => go({ screen: 'live', quizId, roundId: null });
 </script>
 
 <main class="screen-only">
   <header>
-    <h1>{quiz.title}</h1>
+    <div class="heading">
+      <p class="quiz">{quiz.title}</p>
+      <h1>Scores</h1>
+    </div>
     <div class="tools">
-      <Button type="button" onclick={toBoard}>Back to rounds</Button>
       <Button type="button" onclick={() => window.print()}>Print result sheet</Button>
+      <Button type="button" variant="primary" onclick={toBoard}>Back to rounds</Button>
     </div>
   </header>
 
@@ -32,39 +45,30 @@
   {:else}
     <div class="scroll">
       <table>
-        <caption class="sr">Scores by round and team</caption>
+        <caption class="sr">Scores by team and round, best first</caption>
         <thead>
           <tr>
-            <td></td>
-            {#each quiz.teams as team (team.id)}
-              <th scope="col">{team.name}</th>
+            <th scope="col">Rank</th>
+            <th scope="col" class="team">Team</th>
+            {#each sheet.rows as row (row.round.id)}
+              <th scope="col" class="num">{row.round.name}</th>
             {/each}
+            <th scope="col" class="num">Total</th>
           </tr>
         </thead>
         <tbody>
-          {#each sheet.rows as row (row.round.id)}
-            <tr>
-              <th scope="row">{row.round.name}</th>
-              {#each row.byTeam as points, index (quiz.teams[index].id)}
-                <td class:minus={points < 0}>{points}</td>
+          {#each standings as standing (standing.team.id)}
+            {@const leader = anyScore && standing.rank === 1}
+            <tr class:leader>
+              <td><span class="rank">{standing.rank}</span></td>
+              <th scope="row" class="team">{standing.team.name}</th>
+              {#each standing.byRound as points, index (sheet.rows[index].round.id)}
+                <td class="num" class:minus={points < 0}>{points}</td>
               {/each}
+              <td class="num total" class:minus={standing.total < 0}>{standing.total}</td>
             </tr>
           {/each}
         </tbody>
-        <tfoot>
-          <tr class="total">
-            <th scope="row">Total</th>
-            {#each sheet.totals as total, index (quiz.teams[index].id)}
-              <td class:leader={anyScore && sheet.ranks[index] === 1} class:minus={total < 0}>{total}</td>
-            {/each}
-          </tr>
-          <tr>
-            <th scope="row">Rank</th>
-            {#each sheet.ranks as rank, index (quiz.teams[index].id)}
-              <td><span class="rank" class:leader={anyScore && rank === 1}>{rank}</span></td>
-            {/each}
-          </tr>
-        </tfoot>
       </table>
     </div>
     {#if !anyScore}
@@ -85,9 +89,20 @@
   header {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: var(--space-3);
+  }
+
+  .quiz {
+    color: var(--muted);
+    font-size: var(--step-1);
+    font-weight: 600;
+  }
+
+  h1 {
+    color: var(--accent);
+    font-size: var(--step-4);
   }
 
   .tools {
@@ -103,56 +118,67 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: var(--step-3);
+    font-size: var(--step-2);
   }
 
   th,
   td {
-    padding: var(--space-3);
+    padding: var(--space-2) var(--space-3);
     border-block-end: 1px solid var(--line);
-    text-align: center;
   }
 
   thead th {
-    min-width: 6rem;
-    font-size: var(--step-1);
-    font-weight: 600;
     color: var(--muted);
+    font-size: var(--step-0);
+    font-weight: 600;
+    text-align: start;
+    vertical-align: bottom;
   }
 
-  th[scope='row'] {
-    font-size: var(--step-1);
+  .team {
+    width: 100%;
+    min-width: 12rem;
     font-weight: 600;
     text-align: start;
     overflow-wrap: anywhere;
   }
 
-  .total th,
-  .total td {
-    border-block-start: 3px solid var(--fg);
-    font-size: var(--step-5);
+  .num {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead .num {
+    min-width: 6rem;
+  }
+
+  .total {
+    font-size: var(--step-4);
     font-weight: 800;
+    line-height: 1;
   }
 
   .minus {
     color: var(--wrong);
   }
 
-  td.leader {
+  tr.leader .team,
+  tr.leader .total {
     color: var(--accent);
   }
 
   .rank {
-    display: inline-block;
-    min-width: 2.5em;
-    padding: 0 var(--space-3);
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.25em;
+    padding: 0 var(--space-2);
     border: 2px solid var(--line);
     border-radius: var(--radius-pill);
-    font-size: var(--step-2);
+    font-size: var(--step-1);
     font-weight: 800;
   }
 
-  .rank.leader {
+  tr.leader .rank {
     border-color: var(--accent);
     background: var(--accent-bg);
     color: var(--accent-fg);
