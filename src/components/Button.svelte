@@ -5,13 +5,14 @@
 
   let {
     variant = 'quiet',
+    bordered = false,
     children,
     ...rest
-  }: { variant?: 'primary' | 'quiet' | 'danger'; children: Snippet } & HTMLButtonAttributes =
+  }: { variant?: 'primary' | 'quiet' | 'danger'; bordered?: boolean; children: Snippet } & HTMLButtonAttributes =
     $props();
 </script>
 
-<button class={variant} {...rest}>{@render children()}</button>
+<button class={[variant, bordered && 'bordered']} {...rest}>{@render children()}</button>
 
 <style>
   button {
@@ -39,8 +40,12 @@
   }
 
   .danger {
-    border-color: var(--wrong);
+    border-color: transparent;
     color: var(--wrong);
+  }
+
+  .danger.bordered {
+    border-color: var(--wrong);
   }
 
   button:disabled {

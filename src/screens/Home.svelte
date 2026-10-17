@@ -62,7 +62,9 @@
     <h1>Quiz Desk</h1>
     <div class="tools">
       <Button type="button" popovertarget="settings">Settings</Button>
-      <Button type="button" variant="primary" onclick={startCreate}>New quiz</Button>
+      {#if app.quizzes.length > 0}
+        <Button type="button" variant="primary" onclick={startCreate}>New quiz</Button>
+      {/if}
     </div>
     <div id="settings" popover="auto">
       <h2>Settings</h2>
@@ -75,9 +77,7 @@
           Orange
         </Button>
       </div>
-      <Button type="button" aria-pressed={app.muted} onclick={toggleMuted}>
-        {app.muted ? 'Sound is off' : 'Sound is on'}
-      </Button>
+      <Button type="button" aria-pressed={app.muted} onclick={toggleMuted}>Mute sound</Button>
     </div>
   </header>
 
@@ -157,7 +157,7 @@
   </p>
   <div class="buttons">
     <Button type="button" onclick={() => (confirmingDelete = false)}>Keep quiz</Button>
-    <Button type="button" variant="danger" onclick={confirmDelete}>Delete quiz</Button>
+    <Button type="button" variant="danger" bordered onclick={confirmDelete}>Delete quiz</Button>
   </div>
 </Dialog>
 
@@ -228,7 +228,12 @@
 
   :global(button[aria-pressed='true']) {
     border-color: var(--accent);
-    color: var(--accent);
+    background: var(--accent-bg);
+    color: var(--accent-fg);
+  }
+
+  :global(button[aria-pressed='true']::before) {
+    content: '✓ ';
   }
 
   ul {
@@ -239,18 +244,24 @@
   }
 
   li {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
+    gap: var(--space-3) var(--space-5);
     padding-block: var(--space-4);
     border-block-end: 1px solid var(--line);
   }
 
   .summary {
+    min-width: 0;
     display: grid;
     gap: var(--space-1);
+  }
+
+  @media (max-width: 40rem) {
+    li {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   .meta {

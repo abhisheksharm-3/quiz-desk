@@ -8,6 +8,7 @@
     children,
   }: { open: boolean; title: string; children: Snippet } = $props();
 
+  const titleId = $props.id();
   let dialog: HTMLDialogElement;
 
   $effect(() => {
@@ -16,9 +17,11 @@
   });
 </script>
 
-<dialog bind:this={dialog} onclose={() => (open = false)} aria-labelledby="dialog-title">
-  <h2 id="dialog-title">{title}</h2>
-  {@render children()}
+<dialog bind:this={dialog} onclose={() => (open = false)} aria-labelledby={titleId}>
+  <h2 id={titleId}>{title}</h2>
+  {#if open}
+    {@render children()}
+  {/if}
 </dialog>
 
 <style>

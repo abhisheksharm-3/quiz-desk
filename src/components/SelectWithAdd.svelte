@@ -27,8 +27,9 @@
   function confirmAdd() {
     const name = draft.trim();
     if (name) {
-      if (!options.includes(name)) onadd(name);
-      value = name;
+      const existing = options.find((option) => option.toLowerCase() === name.toLowerCase());
+      if (!existing) onadd(name);
+      value = existing ?? name;
     }
     draft = '';
     adding = false;
