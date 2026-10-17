@@ -2,6 +2,7 @@
 
 import { emptyAppData } from './domain/quiz';
 import type { AppData, Quiz } from './domain/types';
+import { setMuted } from './sound';
 import { pickStorage } from './storage';
 
 const storage = pickStorage();
@@ -13,11 +14,13 @@ export const saveStatus = $state({ failed: false });
 export async function initStore(): Promise<void> {
   const saved = await storage.load();
   if (saved) Object.assign(app, saved);
+  setMuted(app.muted);
 }
 
-/** Runs the mutation, then queues one save. Saves run strictly in order. */
+/** Runs the mutation, mirrors the mute flag into the sound module, then queues one save. Saves run strictly in order. */
 export function commit(mutate: (data: AppData) => void): void {
   mutate(app);
+  setMuted(app.muted);
   const snapshot = $state.snapshot(app);
   pendingSave = pendingSave
     .then(() => storage.save(snapshot))

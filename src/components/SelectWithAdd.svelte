@@ -24,6 +24,11 @@
     }
   }
 
+  function cancelAdd() {
+    draft = '';
+    adding = false;
+  }
+
   function confirmAdd() {
     const name = draft.trim();
     if (name) {
@@ -37,7 +42,12 @@
 </script>
 
 {#if adding}
-  <div class="add">
+  <div
+    class="add"
+    onfocusout={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) confirmAdd();
+    }}
+  >
     <Field label="New {label.toLowerCase()}">
       <input
         bind:value={draft}
@@ -50,7 +60,7 @@
       />
     </Field>
     <Button type="button" variant="primary" onclick={confirmAdd}>Add</Button>
-    <Button type="button" onclick={() => (adding = false)}>Cancel</Button>
+    <Button type="button" onclick={cancelAdd}>Cancel</Button>
   </div>
 {:else}
   <Field {label}>
