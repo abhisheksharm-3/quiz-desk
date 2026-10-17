@@ -1,5 +1,7 @@
 /** Rapid fire round: one team answers as many questions as it can before its clock runs out. */
 
+import type { Quiz } from './types';
+
 export type RapidState =
   | { phase: 'ready'; team: number }
   | { phase: 'running'; team: number; questionId: string; right: number; wrong: number }
@@ -27,4 +29,11 @@ export function rapidReducer(s: RapidState, a: RapidAction): RapidState {
   const wrong = s.wrong + (a.type === 'wrong' ? 1 : 0);
   if (a.nextId === null) return { phase: 'done', team: s.team, right, wrong };
   return { phase: 'running', team: s.team, questionId: a.nextId, right, wrong };
+}
+
+/** The team that is up after a restart: the first without a score in the round, or the last team once all have one. */
+export function rapidStartTeam(quiz: Quiz, roundId: string): number {
+  const scored = new Set(quiz.scores.filter((score) => score.roundId === roundId).map((score) => score.teamId));
+  const index = quiz.teams.findIndex((team) => !scored.has(team.id));
+  return index < 0 ? quiz.teams.length - 1 : index;
 }

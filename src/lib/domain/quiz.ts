@@ -170,8 +170,18 @@ export function addScore(
   return score;
 }
 
-export function undoLastScore(quiz: Quiz): ScoreEntry | null {
-  return quiz.scores.pop() ?? null;
+/** True when the newest score belongs to the round, so undo never reaches into another round. */
+export function canUndoScore(quiz: Quiz, roundId: string): boolean {
+  return quiz.scores.at(-1)?.roundId === roundId;
+}
+
+/** Removes the newest score only when it belongs to the round; returns it, or null when nothing was removed. */
+export function undoLastScore(quiz: Quiz, roundId: string): ScoreEntry | null {
+  return canUndoScore(quiz, roundId) ? (quiz.scores.pop() ?? null) : null;
+}
+
+export function clearScores(quiz: Quiz): void {
+  quiz.scores = [];
 }
 
 function maxTimerSeconds(type: RoundType): number {

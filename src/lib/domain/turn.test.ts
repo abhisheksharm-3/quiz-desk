@@ -68,8 +68,24 @@ describe('questions', () => {
     expect(nextQuestion({ questions: [question('a', 1)] } as Round)).toBeNull();
   });
 
-  it('shows only the filled language', () => {
+  it('shows only the filled language in both mode', () => {
     expect(visibleText(question('a', null, 'Q', ''), 'both')).toEqual({ en: 'Q', hi: null });
+  });
+
+  it('falls back to the other language when the chosen one is empty', () => {
     expect(visibleText(question('a', null, 'Q', 'प्र'), 'hi')).toEqual({ en: null, hi: 'प्र' });
+    expect(visibleText(question('a', null, '', 'प्र'), 'en')).toEqual({ en: null, hi: 'प्र' });
+    expect(visibleText(question('a', null, 'Q', ''), 'hi')).toEqual({ en: 'Q', hi: null });
+  });
+
+  it('reopens a right answer as the same asking turn after a passed question', () => {
+    const asking = run(idle(0), [...toAsking, { type: 'pass' }]);
+    const result = run(asking, [{ type: 'right', points: 5 }]);
+    expect(run(result, [{ type: 'reopen' }])).toEqual({ ...asking, nextTeam: 1 });
+  });
+
+  it('does not reopen an ended question', () => {
+    const ended = run(idle(0), [...toAsking, { type: 'end' }]);
+    expect(run(ended, [{ type: 'reopen' }])).toBe(ended);
   });
 });

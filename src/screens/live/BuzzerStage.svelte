@@ -1,27 +1,20 @@
 <!-- Stage for Buzzer rounds: first team to buzz answers, a wrong answer locks that team out until the question ends. -->
 <script lang="ts">
-  import { onDestroy } from 'svelte';
   import Button from '../../components/Button.svelte';
   import { buzzerReducer, type BuzzerAction, type BuzzerState } from '../../lib/domain/buzzer';
   import { nextQuestion } from '../../lib/domain/questions';
-  import { addScore, markAsked, undoLastScore } from '../../lib/domain/quiz';
-  import type { Points, Quiz, Round } from '../../lib/domain/types';
+    import type { Points, Quiz, Round } from '../../lib/domain/types';
   import * as sound from '../../lib/sound';
-  import { app, commit } from '../../lib/store.svelte';
-  import { createCountdown } from '../../lib/timer.svelte';
   import type { Command } from './ControlBar.svelte';
   import QuestionCard from './QuestionCard.svelte';
+  import { createStageActions } from './stageActions.svelte';
   import StageFrame from './StageFrame.svelte';
   import Timer from './Timer.svelte';
 
   let { quiz, round, onback }: { quiz: Quiz; round: Round; onback: () => void } = $props();
 
-  const UNDO_KEY_LABEL = /Mac/.test(navigator.userAgent) ? '⌘Z' : 'Ctrl+Z';
-
-  const countdown = createCountdown(0, (cue) => {
-    if (cue === 'beep') sound.beep();
-    else sound.wrong();
-  });
+  const stage = createStageActions(() => quiz, () => round);
+  const { countdown } = stage;
   let buzzer = $state<BuzzerState>({ phase: 'idle' });
   let awarded = $state<Points>(0);
 
@@ -49,8 +42,6 @@
   });
   const stopsClock = $derived(buzzer.phase === 'result');
 
-  onDestroy(() => countdown.pause());
-
   $effect(() => {
     if (stopsClock) countdown.pause();
   });
@@ -59,27 +50,11 @@
     buzzer = buzzerReducer(buzzer, action, quiz.teams.length);
   }
 
-  function record(teamIndex: number, questionId: string, points: Points): void {
-    commit(() =>
-      addScore(quiz, { roundId: round.id, teamId: quiz.teams[teamIndex].id, questionId, points }, Date.now()),
-    );
-  }
-
   async function start(): Promise<void> {
     if (buzzer.phase !== 'idle' || !question) return;
-    const asked = question;
-    send({ type: 'start', questionId: asked.id });
-    commit(() => markAsked(quiz, asked.id, Date.now()));
+    send({ type: 'start', questionId: question.id });
     awarded = 0;
-    countdown.reset(round.timerSeconds);
-    await sound.startTone();
-    if (!isCountingDown()) return;
-    send({ type: 'countdownDone' });
-    countdown.start();
-  }
-
-  function isCountingDown(): boolean {
-    return buzzer.phase === 'countdown';
+    await stage.begin(question, () => buzzer.phase === 'countdown', () => send({ type: 'countdownDone' }));
   }
 
   function buzz(team: number): void {
@@ -89,7 +64,7 @@
 
   function right(points: Points): void {
     if (buzzer.phase !== 'answering') return;
-    record(buzzer.team, buzzer.questionId, points);
+    stage.record(buzzer.team, buzzer.questionId, points);
     awarded = points;
     sound.right();
     send({ type: 'right' });
@@ -97,7 +72,7 @@
 
   function wrong(points: Points): void {
     if (buzzer.phase !== 'answering') return;
-    if (points !== 0) record(buzzer.team, buzzer.questionId, points);
+    if (points !== 0) stage.record(buzzer.team, buzzer.questionId, points);
     awarded = points;
     sound.wrong();
     send({ type: 'wrong' });
@@ -105,14 +80,6 @@
 
   function end(): void {
     send({ type: 'end' });
-  }
-
-  function undo(): void {
-    commit(() => undoLastScore(quiz));
-  }
-
-  function toggleMute(): void {
-    commit((data) => (data.muted = !data.muted));
   }
 
   const answering = $derived(buzzer.phase === 'answering');
@@ -130,10 +97,10 @@
     answering
       ? [
           { key: 'enter', keyLabel: 'Enter', text: 'Right +10', variant: 'primary', disabled: false, run: () => right(10) },
-          { key: '5', keyLabel: '5', text: 'Right +5', disabled: false, run: () => right(5) },
+          { key: 'r', keyLabel: 'R', text: 'Right +5', disabled: false, run: () => right(5) },
           { key: 'backspace', keyLabel: 'Backspace', text: 'Wrong −5', variant: 'danger', disabled: false, run: () => wrong(-5) },
-          { key: '1', keyLabel: '1', text: 'Wrong −10', variant: 'danger', disabled: false, run: () => wrong(-10) },
-          { key: '0', keyLabel: '0', text: 'Wrong, no penalty', disabled: false, run: () => wrong(0) },
+          { key: 'w', keyLabel: 'W', text: 'Wrong −10', variant: 'danger', disabled: false, run: () => wrong(-10) },
+          { key: 'n', keyLabel: 'N', text: 'Wrong, no penalty', disabled: false, run: () => wrong(0) },
         ]
       : [],
   );
@@ -149,8 +116,8 @@
     },
     ...scoreCommands,
     { key: 'e', keyLabel: 'E', text: 'End question', disabled: buzzer.phase !== 'open' && !answering, run: end },
-    { key: 'z', keyLabel: UNDO_KEY_LABEL, text: 'Undo score', disabled: quiz.scores.length === 0, run: undo },
-    { key: 'm', keyLabel: 'M', text: app.muted ? 'Unmute' : 'Mute', disabled: false, run: toggleMute },
+    stage.undoCommand(),
+    stage.muteCommand(),
     {
       key: 'escape',
       keyLabel: 'Esc',
@@ -170,7 +137,7 @@
   pickable={buzzer.phase === 'open'}
   {locked}
   keyed={buzzer.phase === 'open'}
-  {status}
+  status={status ?? stage.notice}
   onpick={buzz}
 >
   {#if buzzer.phase === 'idle' && !question}

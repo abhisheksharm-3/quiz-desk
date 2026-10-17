@@ -1,27 +1,20 @@
 <!-- Stage for Standard and Picture rounds: wires the turn reducer to the timer, sounds, scores and keys. -->
 <script lang="ts">
-  import { onDestroy } from 'svelte';
   import Button from '../../components/Button.svelte';
   import { nextQuestion } from '../../lib/domain/questions';
-  import { addScore, markAsked, undoLastScore } from '../../lib/domain/quiz';
   import { suggestedPoints, turnReducer, type TurnAction, type TurnState } from '../../lib/domain/turn';
   import type { Points, Quiz, Round } from '../../lib/domain/types';
   import * as sound from '../../lib/sound';
-  import { app, commit } from '../../lib/store.svelte';
-  import { createCountdown } from '../../lib/timer.svelte';
   import type { Command } from './ControlBar.svelte';
   import QuestionCard from './QuestionCard.svelte';
+  import { createStageActions } from './stageActions.svelte';
   import StageFrame from './StageFrame.svelte';
   import Timer from './Timer.svelte';
 
   let { quiz, round, onback }: { quiz: Quiz; round: Round; onback: () => void } = $props();
 
-  const UNDO_KEY_LABEL = /Mac/.test(navigator.userAgent) ? '⌘Z' : 'Ctrl+Z';
-
-  const countdown = createCountdown(0, (cue) => {
-    if (cue === 'beep') sound.beep();
-    else sound.wrong();
-  });
+  const stage = createStageActions(() => quiz, () => round);
+  const { countdown } = stage;
   let turn = $state<TurnState>({ phase: 'idle', nextTeam: 0 });
 
   const question = $derived(nextQuestion(round));
@@ -43,16 +36,8 @@
   );
   const suggested = $derived(turn.phase === 'asking' ? suggestedPoints(turn) : null);
 
-  onDestroy(() => countdown.pause());
-
   function send(action: TurnAction): void {
     turn = turnReducer(turn, action, quiz.teams.length);
-  }
-
-  function record(teamIndex: number, questionId: string, points: Points): void {
-    commit(() =>
-      addScore(quiz, { roundId: round.id, teamId: quiz.teams[teamIndex].id, questionId, points }, Date.now()),
-    );
   }
 
   function finish(): void {
@@ -61,33 +46,27 @@
 
   async function start(): Promise<void> {
     if (turn.phase !== 'idle' || !question) return;
-    const asked = question;
-    send({ type: 'start', questionId: asked.id });
-    commit(() => markAsked(quiz, asked.id, Date.now()));
-    countdown.reset(round.timerSeconds);
-    await sound.startTone();
-    if (!isCountingDown()) return;
-    send({ type: 'countdownDone' });
-    countdown.start();
-  }
-
-  function isCountingDown(): boolean {
-    return turn.phase === 'countdown';
+    send({ type: 'start', questionId: question.id });
+    await stage.begin(question, () => turn.phase === 'countdown', () => send({ type: 'countdownDone' }));
   }
 
   function right(points: Points): void {
     if (turn.phase !== 'asking') return;
     finish();
-    record(turn.team, turn.questionId, points);
+    stage.record(turn.team, turn.questionId, points);
     sound.right();
     send({ type: 'right', points });
   }
 
   function pass(): void {
     send({ type: 'pass' });
-    if (turn.phase !== 'result') return;
-    finish();
-    sound.wrong();
+    if (turn.phase === 'result') {
+      finish();
+      sound.wrong();
+      return;
+    }
+    countdown.reset(round.timerSeconds);
+    countdown.start();
   }
 
   function end(): void {
@@ -97,16 +76,15 @@
 
   function penalty(points: Points): void {
     if ((turn.phase !== 'asking' && turn.phase !== 'result') || turn.team === null) return;
-    record(turn.team, turn.questionId, points);
+    stage.record(turn.team, turn.questionId, points);
     sound.wrong();
   }
 
   function undo(): void {
-    commit(() => undoLastScore(quiz));
-  }
-
-  function toggleMute(): void {
-    commit((data) => (data.muted = !data.muted));
+    if (!stage.undo() || turn.phase !== 'result') return;
+    const { questionId } = turn;
+    const stillAwarded = quiz.scores.some((score) => score.questionId === questionId && score.points > 0);
+    if (!stillAwarded) send({ type: 'reopen' });
   }
 
   const commands: Command[] = $derived([
@@ -124,14 +102,14 @@
     { key: 'e', keyLabel: 'E', text: 'End question', disabled: turn.phase !== 'asking', run: end },
     { key: '3', keyLabel: '3', text: 'Penalty −5', variant: 'danger', disabled: scoringTeam === null, run: () => penalty(-5) },
     { key: '4', keyLabel: '4', text: 'Penalty −10', variant: 'danger', disabled: scoringTeam === null, run: () => penalty(-10) },
-    { key: 'z', keyLabel: UNDO_KEY_LABEL, text: 'Undo score', disabled: quiz.scores.length === 0, run: undo },
-    { key: 'm', keyLabel: 'M', text: app.muted ? 'Unmute' : 'Mute', disabled: false, run: toggleMute },
+    { ...stage.undoCommand(), run: undo },
+    stage.muteCommand(),
     { key: 'escape', keyLabel: 'Esc', text: 'Round board', disabled: turn.phase === 'asking' || turn.phase === 'countdown', run: onback },
   ]);
 
 </script>
 
-<StageFrame {quiz} {round} {commands} current={currentTeam} pickable={turn.phase === 'idle'} onpick={(team) => send({ type: 'pickTeam', team })}>
+<StageFrame {quiz} {round} {commands} current={currentTeam} pickable={turn.phase === 'idle'} status={stage.notice} onpick={(team) => send({ type: 'pickTeam', team })}>
   {#if turn.phase === 'idle' && !question}
     <div class="notice">
       <h2>No questions left in this round</h2>

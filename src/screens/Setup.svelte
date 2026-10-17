@@ -2,7 +2,7 @@
 <script lang="ts">
   import Button from '../components/Button.svelte';
   import Dialog from '../components/Dialog.svelte';
-  import { resetAsked } from '../lib/domain/quiz';
+  import { clearScores, resetAsked } from '../lib/domain/quiz';
   import { readyCheck } from '../lib/domain/ready';
   import { go } from '../lib/nav.svelte';
   import { commit, quizById } from '../lib/store.svelte';
@@ -21,6 +21,7 @@
   let { quizId }: { quizId: string } = $props();
   let active: (typeof TABS)[number]['id'] = $state('details');
   let confirmingReset = $state(false);
+  let confirmingClear = $state(false);
   let tabButtons: HTMLButtonElement[] = $state([]);
 
   const quiz = $derived(quizById(quizId));
@@ -43,6 +44,11 @@
   function confirmReset() {
     commit(() => resetAsked(quiz));
     confirmingReset = false;
+  }
+
+  function confirmClear() {
+    commit(() => clearScores(quiz));
+    confirmingClear = false;
   }
 </script>
 
@@ -93,8 +99,9 @@
             {/each}
           </ul>
         {/if}
-        <div>
+        <div class="buttons">
           <Button type="button" onclick={() => (confirmingReset = true)}>Reset asked questions</Button>
+          <Button type="button" onclick={() => (confirmingClear = true)}>Clear all scores</Button>
         </div>
       </section>
     {/if}
@@ -108,6 +115,14 @@
   <div class="buttons">
     <Button type="button" onclick={() => (confirmingReset = false)}>Keep as is</Button>
     <Button type="button" variant="danger" onclick={confirmReset}>Reset asked questions</Button>
+  </div>
+</Dialog>
+
+<Dialog bind:open={confirmingClear} title="Clear all scores?">
+  <p>Every team goes back to 0 in every round. Use this after a rehearsal, before the real quiz. This cannot be undone.</p>
+  <div class="buttons">
+    <Button type="button" onclick={() => (confirmingClear = false)}>Keep scores</Button>
+    <Button type="button" variant="danger" onclick={confirmClear}>Clear all scores</Button>
   </div>
 </Dialog>
 

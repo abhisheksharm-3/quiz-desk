@@ -70,6 +70,10 @@
     line-height: 1.2;
   }
 
+  .line:lang(hi) {
+    line-height: 1.6;
+  }
+
   .text {
     display: grid;
     gap: var(--space-2);

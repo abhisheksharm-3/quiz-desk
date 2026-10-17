@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { rapidReducer, type RapidAction, type RapidState } from './rapid';
+import { addTeam, addRound, addScore, createQuiz, emptyAppData } from './quiz';
+import { rapidReducer, rapidStartTeam, type RapidAction, type RapidState } from './rapid';
 
 function run(start: RapidState, actions: RapidAction[]): RapidState {
   return actions.reduce(rapidReducer, start);
@@ -39,5 +40,19 @@ describe('rapidReducer', () => {
     const done = run(ready, [{ type: 'start', questionId: null }]);
     expect(run(done, [{ type: 'nextTeam', team: 2 }])).toEqual({ phase: 'ready', team: 2 });
     expect(run(ready, [{ type: 'right', nextId: 'q2' }])).toBe(ready);
+  });
+});
+
+describe('rapidStartTeam', () => {
+  it('resumes at the first team without a score in this round', () => {
+    const quiz = createQuiz(emptyAppData(), { title: 'T', level: '', subject: '', venue: '', quizMasters: '' });
+    const [a, b] = [addTeam(quiz, 'A'), addTeam(quiz, 'B'), addTeam(quiz, 'C')];
+    const round = addRound(quiz, 'R', 'rapid');
+    const other = addRound(quiz, 'S', 'standard');
+    addScore(quiz, { roundId: other.id, teamId: a.id, questionId: null, points: 10 }, 1);
+    expect(rapidStartTeam(quiz, round.id)).toBe(0);
+    addScore(quiz, { roundId: round.id, teamId: a.id, questionId: 'q', points: 1 }, 2);
+    addScore(quiz, { roundId: round.id, teamId: b.id, questionId: 'q', points: -1 }, 3);
+    expect(rapidStartTeam(quiz, round.id)).toBe(2);
   });
 });

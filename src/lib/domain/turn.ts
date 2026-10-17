@@ -6,7 +6,16 @@ export type TurnState =
   | { phase: 'idle'; nextTeam: number }
   | { phase: 'countdown'; questionId: string; team: number; nextTeam: number }
   | { phase: 'asking'; questionId: string; team: number; directTeam: number; tried: number[]; nextTeam: number }
-  | { phase: 'result'; questionId: string; correct: boolean; team: number | null; points: Points; nextTeam: number };
+  | {
+      phase: 'result';
+      questionId: string;
+      correct: boolean;
+      team: number | null;
+      points: Points;
+      directTeam: number;
+      tried: number[];
+      nextTeam: number;
+    };
 
 export type TurnAction =
   | { type: 'pickTeam'; team: number }
@@ -15,6 +24,7 @@ export type TurnAction =
   | { type: 'right'; points: Points }
   | { type: 'pass' }
   | { type: 'end' }
+  | { type: 'reopen' }
   | { type: 'next' };
 
 const DIRECT_POINTS: Points = 10;
@@ -31,14 +41,18 @@ export function turnReducer(s: TurnState, a: TurnAction, teamCount: number): Tur
     return { phase: 'asking', questionId, team, directTeam: team, tried: [team], nextTeam };
   }
   if (s.phase === 'result' && a.type === 'next') return { phase: 'idle', nextTeam: s.nextTeam };
+  if (s.phase === 'result' && a.type === 'reopen' && s.team !== null) {
+    const { questionId, team, directTeam, tried, nextTeam } = s;
+    return { phase: 'asking', questionId, team, directTeam, tried, nextTeam };
+  }
   if (s.phase !== 'asking') return s;
 
   const afterDirect = (s.directTeam + 1) % teamCount;
   if (a.type === 'right') {
-    return { phase: 'result', questionId: s.questionId, correct: true, team: s.team, points: a.points, nextTeam: afterDirect };
+    return { phase: 'result', questionId: s.questionId, correct: true, team: s.team, points: a.points, directTeam: s.directTeam, tried: s.tried, nextTeam: afterDirect };
   }
   if (a.type === 'end') {
-    return { phase: 'result', questionId: s.questionId, correct: false, team: null, points: 0, nextTeam: afterDirect };
+    return { phase: 'result', questionId: s.questionId, correct: false, team: null, points: 0, directTeam: s.directTeam, tried: s.tried, nextTeam: afterDirect };
   }
   if (a.type === 'pass') {
     if (s.tried.length >= teamCount) return turnReducer(s, { type: 'end' }, teamCount);

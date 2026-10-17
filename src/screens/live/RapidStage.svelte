@@ -1,26 +1,24 @@
 <!-- Stage for Rapid fire rounds: one team at a time answers as many questions as it can in its clock, +1 right and -1 wrong. -->
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { untrack } from 'svelte';
   import Button from '../../components/Button.svelte';
   import { answerLines, nextQuestion } from '../../lib/domain/questions';
   import { addScore, markAsked } from '../../lib/domain/quiz';
-  import { rapidReducer, type RapidAction, type RapidState } from '../../lib/domain/rapid';
+  import { rapidReducer, rapidStartTeam, type RapidAction, type RapidState } from '../../lib/domain/rapid';
   import type { Points, Quiz, Round } from '../../lib/domain/types';
   import * as sound from '../../lib/sound';
-  import { app, commit } from '../../lib/store.svelte';
-  import { createCountdown } from '../../lib/timer.svelte';
+  import { commit } from '../../lib/store.svelte';
   import type { Command } from './ControlBar.svelte';
   import QuestionCard from './QuestionCard.svelte';
+  import { createStageActions } from './stageActions.svelte';
   import StageFrame from './StageFrame.svelte';
   import Timer from './Timer.svelte';
 
   let { quiz, round, onback }: { quiz: Quiz; round: Round; onback: () => void } = $props();
 
-  const countdown = createCountdown(0, (cue) => {
-    if (cue === 'beep') sound.beep();
-    else sound.wrong();
-  });
-  let rapid = $state<RapidState>({ phase: 'ready', team: 0 });
+  const stage = createStageActions(() => quiz, () => round);
+  const { countdown } = stage;
+  let rapid = $state<RapidState>({ phase: 'ready', team: untrack(() => rapidStartTeam(quiz, round.id)) });
   let starting = $state(false);
   let previous = $state<{ questionId: string; correct: boolean } | null>(null);
 
@@ -35,8 +33,6 @@
   const isLastTeam = $derived(rapid.team >= quiz.teams.length - 1);
   const tally = $derived(rapid.phase === 'ready' ? null : { right: rapid.right, wrong: rapid.wrong });
   const timeIsUp = $derived(rapid.phase === 'running' && countdown.left <= 0);
-
-  onDestroy(() => countdown.pause());
 
   $effect(() => {
     if (timeIsUp) send({ type: 'timeUp' });
@@ -80,10 +76,6 @@
     send({ type: 'nextTeam', team: rapid.team + 1 });
   }
 
-  function toggleMute(): void {
-    commit((data) => (data.muted = !data.muted));
-  }
-
   const commands: Command[] = $derived([
     {
       key: ' ',
@@ -99,7 +91,7 @@
     },
     { key: 'arrowright', keyLabel: '→', text: 'Right +1', variant: 'primary', disabled: rapid.phase !== 'running', run: () => mark(true) },
     { key: 'arrowleft', keyLabel: '←', text: 'Wrong −1', variant: 'danger', disabled: rapid.phase !== 'running', run: () => mark(false) },
-    { key: 'm', keyLabel: 'M', text: app.muted ? 'Unmute' : 'Mute', disabled: false, run: toggleMute },
+    stage.muteCommand(),
     { key: 'escape', keyLabel: 'Esc', text: 'Round board', disabled: rapid.phase === 'running' || starting, run: onback },
   ]);
 </script>

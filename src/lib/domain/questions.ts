@@ -15,12 +15,13 @@ export function nextQuestion(round: Round): Question | null {
   return round.questions.find((question) => question.askedAt === null) ?? null;
 }
 
-/** The English and Hindi lines for the language mode; empty text becomes null so nothing blank renders. */
+/** The English and Hindi lines for the language mode. A language the question lacks falls back to the other one, so nothing blank renders. */
 export function visibleText(q: Question, mode: Quiz['languageMode']): { en: string | null; hi: string | null } {
-  return {
-    en: mode !== 'hi' && q.en.trim() ? q.en : null,
-    hi: mode !== 'en' && q.hi.trim() ? q.hi : null,
-  };
+  const en = q.en.trim() ? q.en : null;
+  const hi = q.hi.trim() ? q.hi : null;
+  if (mode === 'en') return { en, hi: en ? null : hi };
+  if (mode === 'hi') return { en: hi ? null : en, hi };
+  return { en, hi };
 }
 
 /** The answer lines to reveal: the written answer, or the correct option when no answer text was entered. */

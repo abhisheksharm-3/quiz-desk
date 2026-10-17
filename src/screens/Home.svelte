@@ -5,12 +5,14 @@
   import Field from '../components/Field.svelte';
   import SelectWithAdd from '../components/SelectWithAdd.svelte';
   import { createQuiz, deleteQuiz } from '../lib/domain/quiz';
+  import { readyCheck } from '../lib/domain/ready';
   import type { Quiz } from '../lib/domain/types';
   import { go } from '../lib/nav.svelte';
   import { app, commit } from '../lib/store.svelte';
 
   let creating = $state(false);
   let pendingDelete: Quiz | null = $state(null);
+  let notReady: Quiz | null = $state(null);
   let draft = $state(blankDraft());
   let levelField: SelectWithAdd;
   let subjectField: SelectWithAdd;
@@ -44,6 +46,16 @@
       commit((data) => deleteQuiz(data, id));
     }
     pendingDelete = null;
+  }
+
+  function run(quiz: Quiz) {
+    if (readyCheck(quiz).length > 0) notReady = quiz;
+    else openLive(quiz);
+  }
+
+  function openLive(quiz: Quiz) {
+    notReady = null;
+    go({ screen: 'live', quizId: quiz.id, roundId: null });
   }
 
   function setTheme(theme: 'yellow' | 'orange') {
@@ -112,7 +124,7 @@
             <Button
               type="button"
               variant="primary"
-              onclick={() => go({ screen: 'live', quizId: quiz.id, roundId: null })}
+              onclick={() => run(quiz)}
             >
               Run <span class="sr">{quiz.title}</span>
             </Button>
@@ -169,6 +181,27 @@
     <Button type="button" onclick={() => (pendingDelete = null)}>Keep quiz</Button>
     <Button type="button" variant="danger" onclick={confirmDelete}>Delete quiz</Button>
   </div>
+</Dialog>
+
+<Dialog
+  bind:open={() => notReady !== null, (isOpen) => !isOpen && (notReady = null)}
+  title="This quiz is not ready">
+  {#if notReady}
+    <ul class="problems">
+      {#each readyCheck(notReady) as problem (problem)}
+        <li>{problem}</li>
+      {/each}
+    </ul>
+    <div class="buttons">
+      <Button type="button" onclick={() => openLive(notReady!)}>Run anyway</Button>
+      <Button
+        type="button"
+        variant="primary"
+        onclick={() => notReady && go({ screen: 'setup', quizId: notReady.id })}>
+        Open setup
+      </Button>
+    </div>
+  {/if}
 </Dialog>
 
 <style>
@@ -262,6 +295,23 @@
     li {
       grid-template-columns: minmax(0, 1fr);
     }
+  }
+
+  .problems {
+    display: grid;
+    gap: var(--space-2);
+    max-height: 50dvh;
+    margin-block-end: var(--space-3);
+    padding-inline-start: var(--space-4);
+    overflow-y: auto;
+    list-style: disc;
+    border: 0;
+  }
+
+  .problems li {
+    display: list-item;
+    padding: 0;
+    border: 0;
   }
 
   .meta {

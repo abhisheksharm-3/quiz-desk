@@ -11,6 +11,7 @@ import {
   markAsked,
   renameTeam,
   resetAsked,
+  clearScores,
   undoLastScore,
   updateRound,
 } from './quiz';
@@ -109,10 +110,31 @@ describe('scores', () => {
     const round = addRound(quiz, 'S', 'standard');
     addScore(quiz, { roundId: round.id, teamId: team.id, questionId: null, points: 10 }, 1);
     const newest = addScore(quiz, { roundId: round.id, teamId: team.id, questionId: null, points: -5 }, 2);
-    expect(undoLastScore(quiz)).toBe(newest);
+    expect(undoLastScore(quiz, round.id)).toBe(newest);
     expect(quiz.scores).toHaveLength(1);
-    undoLastScore(quiz);
-    expect(undoLastScore(quiz)).toBeNull();
+    undoLastScore(quiz, round.id);
+    expect(undoLastScore(quiz, round.id)).toBeNull();
+  });
+
+  it('undo leaves the score of another round alone', () => {
+    const quiz = newQuiz();
+    const team = addTeam(quiz, 'A');
+    const earlier = addRound(quiz, 'S', 'standard');
+    const current = addRound(quiz, 'T', 'standard');
+    addScore(quiz, { roundId: earlier.id, teamId: team.id, questionId: null, points: 10 }, 1);
+    expect(undoLastScore(quiz, current.id)).toBeNull();
+    expect(quiz.scores).toHaveLength(1);
+  });
+
+  it('clearScores empties the sheet so a rehearsed team can be deleted', () => {
+    const quiz = newQuiz();
+    const team = addTeam(quiz, 'A');
+    const round = addRound(quiz, 'S', 'standard');
+    addScore(quiz, { roundId: round.id, teamId: team.id, questionId: null, points: 10 }, 1);
+    expect(() => deleteTeam(quiz, team.id)).toThrow(QuizRuleError);
+    clearScores(quiz);
+    deleteTeam(quiz, team.id);
+    expect(quiz.teams).toHaveLength(0);
   });
 });
 
