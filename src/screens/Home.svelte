@@ -1,23 +1,30 @@
-<!-- Home: the quiz list, the new-quiz dialog, delete confirmation and the settings popover. -->
+<!-- Home: the quiz list with each quiz's status and next step, the new-quiz dialog and the settings menu. -->
 <script lang="ts">
   import Button from '../components/Button.svelte';
+  import Confirm from '../components/Confirm.svelte';
   import Dialog from '../components/Dialog.svelte';
   import Field from '../components/Field.svelte';
+  import Menu from '../components/Menu.svelte';
   import SelectWithAdd from '../components/SelectWithAdd.svelte';
   import { createQuiz, deleteQuiz } from '../lib/domain/quiz';
-  import { readyCheck } from '../lib/domain/ready';
+  import { readyIssues } from '../lib/domain/ready';
   import type { Quiz } from '../lib/domain/types';
   import { go } from '../lib/nav.svelte';
   import { app, commit } from '../lib/store.svelte';
 
   let creating = $state(false);
   let pendingDelete: Quiz | null = $state(null);
-  let notReady: Quiz | null = $state(null);
   let draft = $state(blankDraft());
   let levelField: SelectWithAdd;
   let subjectField: SelectWithAdd;
 
   const dateFormat = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' });
+
+  const settingsItems = $derived([
+    { text: 'Yellow highlight', current: app.theme === 'yellow', run: () => setTheme('yellow') },
+    { text: 'Orange highlight', current: app.theme === 'orange', run: () => setTheme('orange') },
+    { text: app.muted ? 'Unmute sound' : 'Mute sound', run: toggleMuted },
+  ]);
 
   function blankDraft() {
     return { title: '', level: '', subject: '', venue: '', quizMasters: '' };
@@ -32,12 +39,10 @@
     event.preventDefault();
     levelField.commitDraft();
     subjectField.commitDraft();
-    commit((data) => createQuiz(data, { ...draft, title: draft.title.trim() }));
+    let created: Quiz | undefined;
+    commit((data) => (created = createQuiz(data, { ...draft, title: draft.title.trim() })));
     creating = false;
-  }
-
-  function askDelete(quiz: Quiz) {
-    pendingDelete = quiz;
+    if (created) go({ screen: 'setup', quizId: created.id, step: 'teams' });
   }
 
   function confirmDelete() {
@@ -46,16 +51,6 @@
       commit((data) => deleteQuiz(data, id));
     }
     pendingDelete = null;
-  }
-
-  function run(quiz: Quiz) {
-    if (readyCheck(quiz).length > 0) notReady = quiz;
-    else openLive(quiz);
-  }
-
-  function openLive(quiz: Quiz) {
-    notReady = null;
-    go({ screen: 'live', quizId: quiz.id, roundId: null });
   }
 
   function setTheme(theme: 'yellow' | 'orange') {
@@ -77,60 +72,66 @@
 
 <main>
   <header>
-    <h1>Quiz Desk</h1>
-    <div class="tools">
-      <Button type="button" popovertarget="settings">Settings</Button>
-      {#if app.quizzes.length > 0}
-        <Button type="button" onclick={startCreate}>New quiz</Button>
-      {/if}
+    <div class="heading">
+      <h1>Quiz Desk</h1>
+      {#if app.quizzes.length > 0}<p>Start a quiz, or pick up where you left off.</p>{/if}
     </div>
-    <div id="settings" popover="auto">
-      <h2>Settings</h2>
-      <div class="group" role="group" aria-label="Highlight colour">
-        <span>Highlight colour</span>
-        <Button type="button" aria-pressed={app.theme === 'yellow'} onclick={() => setTheme('yellow')}>
-          Yellow
-        </Button>
-        <Button type="button" aria-pressed={app.theme === 'orange'} onclick={() => setTheme('orange')}>
-          Orange
-        </Button>
-      </div>
-      <Button type="button" aria-pressed={app.muted} onclick={toggleMuted}>Mute sound</Button>
+    <div class="tools">
+      <Menu label="Settings" items={settingsItems}>
+        {#snippet trigger()}Settings{/snippet}
+      </Menu>
+      {#if app.quizzes.length > 0}
+        <Button type="button" variant="primary" onclick={startCreate}>New quiz</Button>
+      {/if}
     </div>
   </header>
 
   {#if app.quizzes.length === 0}
     <section class="empty">
       <h2>No quizzes yet</h2>
-      <p>Start by creating a quiz. Then add its teams, rounds and questions, and run it on the projector.</p>
-      <Button type="button" variant="primary" onclick={startCreate}>Create your first quiz</Button>
+      <p>Create a quiz, add its teams, rounds and questions, then run it on the projector.</p>
+      <Button type="button" variant="primary" size="large" onclick={startCreate}>Create your first quiz</Button>
     </section>
   {:else}
     <ul>
       {#each app.quizzes as quiz (quiz.id)}
+        {@const issues = readyIssues(quiz)}
         <li>
           <div class="summary">
             <h2 lang={hasDevanagari(quiz.title) ? 'hi' : undefined}>{quiz.title}</h2>
-            <p>{quiz.level} · {quiz.subject}</p>
             <p class="meta">
-              {plural(quiz.teams.length, 'team')}, {plural(quiz.rounds.length, 'round')}, created
-              {dateFormat.format(quiz.createdAt)}
+              {quiz.level}, {quiz.subject}. {plural(quiz.teams.length, 'team')}, {plural(quiz.rounds.length, 'round')},
+              created {dateFormat.format(quiz.createdAt)}
+            </p>
+            <p class="status" class:ready={issues.length === 0}>
+              {issues.length === 0 ? '✓ Ready to run' : `Setup: ${plural(issues.length, 'thing')} left`}
             </p>
           </div>
           <div class="actions">
+            {#if issues.length === 0}
+              <Button
+                type="button"
+                variant="primary"
+                onclick={() => go({ screen: 'live', quizId: quiz.id, roundId: null })}
+              >
+                Start quiz <span class="sr">{quiz.title}</span>
+              </Button>
+            {:else}
+              <Button
+                type="button"
+                variant="primary"
+                onclick={() => go({ screen: 'setup', quizId: quiz.id, step: issues[0].step })}
+              >
+                Continue setup <span class="sr">{quiz.title}</span>
+              </Button>
+            {/if}
             <Button type="button" onclick={() => go({ screen: 'setup', quizId: quiz.id })}>
-              Open <span class="sr">{quiz.title}</span>
+              Edit <span class="sr">{quiz.title}</span>
             </Button>
-            <Button
-              type="button"
-              variant="primary"
-              onclick={() => run(quiz)}
-            >
-              Run <span class="sr">{quiz.title}</span>
-            </Button>
-            <Button type="button" variant="quiet" onclick={() => askDelete(quiz)}>
-              Delete <span class="sr">{quiz.title}</span>
-            </Button>
+            <Menu
+              label="More actions for {quiz.title}"
+              items={[{ text: 'Delete quiz', danger: true, run: () => (pendingDelete = quiz) }]}
+            />
           </div>
         </li>
       {/each}
@@ -170,55 +171,34 @@
   </form>
 </Dialog>
 
-<Dialog
+<Confirm
   bind:open={() => pendingDelete !== null, (isOpen) => !isOpen && (pendingDelete = null)}
-  title="Delete this quiz?">
-  <p>
-    {pendingDelete?.title} will be removed with its teams, rounds, questions and scores. This cannot be
-    undone.
-  </p>
-  <div class="buttons">
-    <Button type="button" onclick={() => (pendingDelete = null)}>Keep quiz</Button>
-    <Button type="button" variant="danger" onclick={confirmDelete}>Delete quiz</Button>
-  </div>
-</Dialog>
-
-<Dialog
-  bind:open={() => notReady !== null, (isOpen) => !isOpen && (notReady = null)}
-  title="This quiz is not ready">
-  {#if notReady}
-    <ul class="problems">
-      {#each readyCheck(notReady) as problem (problem)}
-        <li>{problem}</li>
-      {/each}
-    </ul>
-    <div class="buttons">
-      <Button type="button" onclick={() => openLive(notReady!)}>Run anyway</Button>
-      <Button
-        type="button"
-        variant="primary"
-        onclick={() => notReady && go({ screen: 'setup', quizId: notReady.id })}>
-        Open setup
-      </Button>
-    </div>
-  {/if}
-</Dialog>
+  title="Delete this quiz?"
+  confirmLabel="Delete quiz"
+  keepLabel="Keep quiz"
+  onconfirm={confirmDelete}>
+  {pendingDelete?.title} will be removed with its teams, rounds, questions and scores. This cannot be undone.
+</Confirm>
 
 <style>
   main {
-    max-width: 64rem;
+    max-width: 62rem;
     margin: 0 auto;
     padding: var(--space-5) var(--space-4) var(--space-6);
   }
 
   header {
-    position: relative;
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: var(--space-3);
     margin-block-end: var(--space-5);
+  }
+
+  .heading {
+    display: grid;
+    gap: var(--space-1);
   }
 
   h1 {
@@ -226,11 +206,17 @@
     font-size: var(--step-4);
   }
 
+  .heading p {
+    color: var(--muted);
+    font-size: var(--step-1);
+  }
+
   .tools,
   .actions,
   .buttons {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-2);
   }
 
@@ -238,42 +224,9 @@
     justify-content: flex-end;
   }
 
-  #settings {
-    inset: auto;
-    top: calc(var(--space-5) + 3.5rem);
-    right: max(var(--space-4), calc((100vw - 64rem) / 2 + var(--space-4)));
-    margin: 0;
-    padding: var(--space-4);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--fg);
-  }
-
-  #settings:popover-open {
+  ul {
     display: grid;
     gap: var(--space-3);
-  }
-
-  .group {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .group span {
-    flex-basis: 100%;
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--muted);
-  }
-
-  ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    border-block-start: 1px solid var(--line);
   }
 
   li {
@@ -281,8 +234,10 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: var(--space-3) var(--space-5);
-    padding-block: var(--space-4);
-    border-block-end: 1px solid var(--line);
+    padding: var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
   }
 
   .summary {
@@ -291,32 +246,17 @@
     gap: var(--space-1);
   }
 
-  @media (max-width: 40rem) {
-    li {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  .problems {
-    display: grid;
-    gap: var(--space-2);
-    max-height: 50dvh;
-    margin-block-end: var(--space-3);
-    padding-inline-start: var(--space-4);
-    overflow-y: auto;
-    list-style: disc;
-    border: 0;
-  }
-
-  .problems li {
-    display: list-item;
-    padding: 0;
-    border: 0;
-  }
-
   .meta {
-    font-size: var(--step--1);
     color: var(--muted);
+  }
+
+  .status {
+    margin-block-start: var(--space-2);
+    font-weight: 600;
+  }
+
+  .status.ready {
+    color: var(--right);
   }
 
   .empty {
@@ -327,8 +267,24 @@
     padding-block: var(--space-6);
   }
 
+  .empty h2 {
+    font-size: var(--step-4);
+    font-weight: 800;
+  }
+
+  .empty p {
+    color: var(--muted);
+    font-size: var(--step-1);
+  }
+
   form {
     display: grid;
     gap: var(--space-3);
+  }
+
+  @media (max-width: 40rem) {
+    li {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 </style>

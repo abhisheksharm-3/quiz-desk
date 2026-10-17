@@ -1,21 +1,25 @@
-<!-- Native button in three variants: primary, quiet, danger. -->
+<!-- Native button in three variants (primary, quiet, danger) and two sizes. -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { HTMLButtonAttributes } from 'svelte/elements';
 
   let {
     variant = 'quiet',
+    size = 'regular',
     children,
     ...rest
-  }: { variant?: 'primary' | 'quiet' | 'danger'; children: Snippet } & HTMLButtonAttributes =
-    $props();
+  }: {
+    variant?: 'primary' | 'quiet' | 'danger';
+    size?: 'regular' | 'large';
+    children: Snippet;
+  } & HTMLButtonAttributes = $props();
 </script>
 
-<button class={variant} {...rest}>{@render children()}</button>
+<button class="{variant} {size}" {...rest}>{@render children()}</button>
 
 <style>
   button {
-    min-height: 2.75rem;
+    min-height: var(--control);
     padding: var(--space-2) var(--space-4);
     border: 2px solid var(--line);
     border-radius: var(--radius);
@@ -30,6 +34,12 @@
 
   button:active:not(:disabled) {
     transform: scale(0.97);
+  }
+
+  .large {
+    min-height: var(--control-large);
+    padding-inline: var(--space-5);
+    font-size: var(--step-1);
   }
 
   .primary {

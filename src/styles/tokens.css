@@ -3,11 +3,12 @@
 :root {
   --bg: oklch(0.13 0.006 85);
   --fg: oklch(0.97 0.004 85);
+  --surface: oklch(0.18 0.008 85);
   --muted: oklch(0.74 0.01 85);
   --line: oklch(0.36 0.01 85);
   --accent: oklch(0.89 0.18 97);
-  --accent-fg: var(--accent);
-  --accent-bg: transparent;
+  --accent-fg: oklch(0.2 0.04 85);
+  --accent-bg: var(--accent);
   --right: oklch(0.82 0.18 150);
   --wrong: oklch(0.7 0.21 25);
 
@@ -29,6 +30,8 @@
   --space-4: 1.5rem;
   --space-5: 2.5rem;
   --space-6: 4rem;
+  --control: 2.75rem;
+  --control-large: 3.5rem;
 
   --radius: 0.5rem;
   --radius-pill: 999px;
@@ -41,6 +44,7 @@
 
 :root[data-theme='orange'] {
   --bg: oklch(0.13 0.006 55);
+  --surface: oklch(0.18 0.008 55);
   --accent: oklch(0.74 0.17 55);
   --accent-fg: oklch(0.24 0.08 260);
   --accent-bg: var(--accent);

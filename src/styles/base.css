@@ -35,16 +35,41 @@ p {
   overflow-wrap: anywhere;
 }
 
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
 h1 {
   font-size: var(--step-3);
   font-weight: 800;
   line-height: 1.1;
+  letter-spacing: -0.015em;
 }
 
 h2 {
   font-size: var(--step-2);
   font-weight: 600;
   line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-size: var(--step-1);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 :focus-visible {
@@ -65,7 +90,7 @@ input,
 select,
 textarea {
   width: 100%;
-  min-height: 2.75rem;
+  min-height: var(--control);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius);

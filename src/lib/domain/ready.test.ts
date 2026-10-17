@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { findDuplicate, textKeys } from './duplicate';
 import { addQuestion, addRound, addTeam, createQuiz, emptyAppData } from './quiz';
-import { readyCheck } from './ready';
+import { readyCheck, readyIssues } from './ready';
 import type { Quiz, QuestionDraft, RoundType } from './types';
 
 const input = { title: 'T', level: 'Block level', subject: 'Science quiz', venue: '', quizMasters: '' };
@@ -133,5 +133,20 @@ describe('findDuplicate', () => {
 
   it('skips the question being edited', () => {
     expect(findDuplicate(quiz, { en: 'Other', hi: '' }, other.id)).toBeNull();
+  });
+});
+
+describe('readyIssues', () => {
+  it('sends each problem to the setup step that fixes it, naming the round for question problems', () => {
+    const quiz = quizWith([{ name: 'Physics', type: 'standard', questions: questions(7) }]);
+    quiz.teams.pop();
+    const [teams, questionsIssue] = readyIssues(quiz);
+    expect(teams).toEqual({ text: 'Add at least 2 teams', step: 'teams' });
+    expect(questionsIssue).toEqual({
+      text: 'Round 1 "Physics" has 7 questions, needs 10',
+      step: 'questions',
+      roundId: quiz.rounds[0].id,
+    });
+    expect(readyIssues(quizWith([]))).toEqual([{ text: 'Add at least 1 round', step: 'rounds' }]);
   });
 });

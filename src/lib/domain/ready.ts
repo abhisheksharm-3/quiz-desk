@@ -6,13 +6,28 @@ import type { Question, Quiz, Round } from './types';
 const MIN_QUESTIONS = 10;
 const MIN_TEAMS = 2;
 
+export type SetupStep = 'details' | 'teams' | 'rounds' | 'questions' | 'review';
+
+export interface ReadyIssue {
+  text: string;
+  step: SetupStep;
+  roundId?: string;
+}
+
+/** One issue per missing piece, tagged with the setup step that fixes it. An empty list means the quiz is ready. */
+export function readyIssues(quiz: Quiz): ReadyIssue[] {
+  const issues: ReadyIssue[] = [];
+  if (quiz.teams.length < MIN_TEAMS) issues.push({ text: `Add at least ${MIN_TEAMS} teams`, step: 'teams' });
+  if (quiz.rounds.length === 0) issues.push({ text: 'Add at least 1 round', step: 'rounds' });
+  quiz.rounds.forEach((round, index) => {
+    for (const text of roundProblems(round, index + 1)) issues.push({ text, step: 'questions', roundId: round.id });
+  });
+  return issues;
+}
+
 /** Returns one user-facing line per missing piece. An empty list means the quiz is ready. */
 export function readyCheck(quiz: Quiz): string[] {
-  const problems: string[] = [];
-  if (quiz.teams.length < MIN_TEAMS) problems.push(`Add at least ${MIN_TEAMS} teams`);
-  if (quiz.rounds.length === 0) problems.push('Add at least 1 round');
-  quiz.rounds.forEach((round, index) => problems.push(...roundProblems(round, index + 1)));
-  return problems;
+  return readyIssues(quiz).map((issue) => issue.text);
 }
 
 function roundProblems(round: Round, position: number): string[] {

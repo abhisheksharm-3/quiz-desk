@@ -1,8 +1,10 @@
-/** Which screen the window shows. A single-window app needs no router. */
+/** Which screen the window shows. A single-window app needs no router. `step` opens setup on a given step. */
+
+import type { SetupStep } from './domain/ready';
 
 export type Nav =
   | { screen: 'home' }
-  | { screen: 'setup'; quizId: string }
+  | { screen: 'setup'; quizId: string; step?: SetupStep }
   | { screen: 'live'; quizId: string; roundId: string | null }
   | { screen: 'scores'; quizId: string };
 
