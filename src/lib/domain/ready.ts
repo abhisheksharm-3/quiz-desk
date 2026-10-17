@@ -1,8 +1,9 @@
 /** The ready check: everything a quiz still lacks before it can be run. */
 
+import { correctOptionProblem } from './options';
 import type { Question, Quiz, Round } from './types';
 
-export const MIN_QUESTIONS = 10;
+const MIN_QUESTIONS = 10;
 const MIN_TEAMS = 2;
 
 /** Returns one user-facing line per missing piece. An empty list means the quiz is ready. */
@@ -36,6 +37,8 @@ function roundProblems(round: Round, position: number): string[] {
 }
 
 function answerProblems(question: Question, label: string): string[] {
+  const optionProblem = correctOptionProblem(question.options, question.correctOption);
+  if (optionProblem) return [`${label}: ${optionProblem}`];
   const answered = question.correctOption || question.answerEn.trim() || question.answerHi.trim();
   return answered ? [] : [`${label} has no answer`];
 }

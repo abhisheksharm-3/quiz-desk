@@ -11,9 +11,9 @@ import type {
   Team,
 } from './types';
 
-const MAX_TEAMS = 10;
-const MAX_ROUNDS = 7;
-const MAX_TIMER_SECONDS = 30;
+export const MAX_TEAMS = 10;
+export const MAX_ROUNDS = 7;
+export const MAX_TIMER_SECONDS = 30;
 const DEFAULT_TIMER_SECONDS = 30;
 const RAPID_TIMER_SECONDS = 60;
 
@@ -76,6 +76,7 @@ export function addRound(quiz: Quiz, name: string, type: RoundType): Round {
   if (quiz.rounds.length >= MAX_ROUNDS) {
     throw new QuizRuleError(`A quiz can have at most ${MAX_ROUNDS} rounds`);
   }
+  assertRoundNameFree(quiz, name);
   const round: Round = {
     id: crypto.randomUUID(),
     name,
@@ -93,6 +94,7 @@ export function updateRound(
   patch: Partial<Pick<Round, 'name' | 'type' | 'timerSeconds'>>,
 ): void {
   const round = findRound(quiz, roundId);
+  if (patch.name !== undefined) assertRoundNameFree(quiz, patch.name, roundId);
   const type = patch.type ?? round.type;
   const changesType = type !== round.type;
   const timerSeconds =
@@ -104,6 +106,13 @@ export function updateRound(
     throw new QuizRuleError(`The timer can be at most ${MAX_TIMER_SECONDS} seconds`);
   }
   Object.assign(round, patch, { type, timerSeconds });
+}
+
+function assertRoundNameFree(quiz: Quiz, name: string, exceptId?: string): void {
+  const wanted = name.trim().toLowerCase();
+  if (quiz.rounds.some((round) => round.id !== exceptId && round.name.trim().toLowerCase() === wanted)) {
+    throw new QuizRuleError(`A round named "${name.trim()}" already exists`);
+  }
 }
 
 export function deleteRound(quiz: Quiz, roundId: string): void {

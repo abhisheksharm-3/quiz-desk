@@ -47,6 +47,10 @@ export function browserStorage(): Storage {
   };
 }
 
+export function inTauri(): boolean {
+  return '__TAURI_INTERNALS__' in window;
+}
+
 export function pickStorage(): Storage {
-  return '__TAURI_INTERNALS__' in window ? tauriStorage() : browserStorage();
+  return inTauri() ? tauriStorage() : browserStorage();
 }

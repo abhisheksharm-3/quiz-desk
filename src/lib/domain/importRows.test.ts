@@ -57,6 +57,27 @@ describe('parseQuestionRows', () => {
     ]);
   });
 
+  it.each([
+    ['A and B filled, correct C', { 'Option A': 'a', 'Option B': 'b', 'Correct option': 'C' }],
+    ['correct option with no options', { 'Correct option': 'B' }],
+  ])('rejects a correct option with no text: %s', (_name, cells) => {
+    const { quiz } = quizWithRounds();
+    const { items, errors } = parseQuestionRows(quiz, [{ ...blank, Round: 'Physics', 'Question (English)': 'x', ...cells }]);
+    expect(items).toEqual([]);
+    expect(errors).toEqual([
+      { row: 2, message: `Row 2: option ${cells['Correct option']} is marked correct but has no text` },
+    ]);
+  });
+
+  it.each([['round'], ['Round '], ['Question']])('names the missing template headers when the file has "%s"', (header) => {
+    const { quiz } = quizWithRounds();
+    const { items, errors } = parseQuestionRows(quiz, [{ [header]: 'Physics', 'Question (English)': 'x' }]);
+    expect(items).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain('Round');
+    expect(errors[0].message).toContain('Option A');
+  });
+
   it('skips a row of only spaces without an error', () => {
     const { quiz } = quizWithRounds();
     const result = parseQuestionRows(quiz, [{ ...blank, Round: '   ' }]);

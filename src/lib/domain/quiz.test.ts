@@ -38,6 +38,15 @@ describe('limits', () => {
     expect(act).toThrow('A quiz can have at most 7 rounds');
   });
 
+  it('refuses a second round with the same name, ignoring case and spacing, on add and rename', () => {
+    const quiz = newQuiz();
+    addRound(quiz, 'Physics', 'standard');
+    const other = addRound(quiz, 'Maths', 'standard');
+    expect(() => addRound(quiz, ' physics ', 'standard')).toThrow('A round named "physics" already exists');
+    expect(() => updateRound(quiz, other.id, { name: 'PHYSICS' })).toThrow(QuizRuleError);
+    updateRound(quiz, other.id, { name: 'maths' });
+  });
+
   it('caps the timer at 30 seconds for non-rapid rounds only', () => {
     const quiz = newQuiz();
     const standard = addRound(quiz, 'S', 'standard');

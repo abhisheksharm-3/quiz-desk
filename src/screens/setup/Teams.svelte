@@ -3,11 +3,9 @@
   import Button from '../../components/Button.svelte';
   import Field from '../../components/Field.svelte';
   import { attempt } from '../../lib/attempt';
-  import { addTeam, deleteTeam, renameTeam } from '../../lib/domain/quiz';
+  import { addTeam, deleteTeam, MAX_TEAMS, renameTeam } from '../../lib/domain/quiz';
   import type { Quiz, Team } from '../../lib/domain/types';
   import { commit } from '../../lib/store.svelte';
-
-  const MAX_TEAMS = 10;
 
   let { quiz }: { quiz: Quiz } = $props();
   let name = $state('');

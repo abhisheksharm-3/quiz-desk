@@ -4,10 +4,9 @@
   import Button from '../../components/Button.svelte';
   import Field from '../../components/Field.svelte';
   import { findDuplicate } from '../../lib/domain/duplicate';
-  import type { Option, Question, QuestionDraft, Quiz, Round } from '../../lib/domain/types';
+import { correctOptionProblem, OPTION_LETTERS } from '../../lib/domain/options';
+  import type { Question, QuestionDraft, Quiz, Round } from '../../lib/domain/types';
   import { importPicture, pictureSrc } from '../../lib/pictures';
-
-  const OPTION_LETTERS: Option[] = ['A', 'B', 'C', 'D'];
 
   let {
     quiz,
@@ -57,13 +56,15 @@
       correctOption: hasOptions ? fields.correctOption : null,
       answerEn: fields.answerEn.trim(),
       answerHi: fields.answerHi.trim(),
-      image: fields.image,
+      image: isPicture ? fields.image : null,
     };
   }
 
   function missingPart(draft: QuestionDraft): string | null {
     if (isPicture) return draft.image ? null : 'Choose a picture first';
-    return draft.en || draft.hi ? null : 'Type the question in English or Hindi first';
+    if (!draft.en && !draft.hi) return 'Type the question in English or Hindi first';
+    const problem = correctOptionProblem(draft.options, fields.correctOption);
+    return problem && `Fix the options: ${problem}`;
   }
 
   function submit(event: SubmitEvent) {

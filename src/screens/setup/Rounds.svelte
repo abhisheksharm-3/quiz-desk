@@ -9,6 +9,8 @@
     addRound,
     deleteQuestion,
     deleteRound,
+    MAX_ROUNDS,
+    MAX_TIMER_SECONDS,
     moveRound,
     updateQuestion,
     updateRound,
@@ -19,8 +21,6 @@
   import QuestionForm from './QuestionForm.svelte';
   import QuestionList from './QuestionList.svelte';
 
-  const MAX_ROUNDS = 7;
-  const MAX_TIMER_SECONDS = 30;
   const TYPE_LABELS: Record<RoundType, string> = {
     standard: 'Standard',
     picture: 'Picture',
@@ -70,7 +70,8 @@
       input.value = round.name;
       return;
     }
-    commit(() => updateRound(quiz, round.id, { name }));
+    message = attempt(() => commit(() => updateRound(quiz, round.id, { name })));
+    if (message) input.value = round.name;
   }
 
   function retype(round: Round, type: RoundType) {
@@ -199,7 +200,7 @@
           onedit={(question) => (editing = question)}
           ondelete={(question) => removeQuestion(selected, question)}
         />
-        {#key `${selected.id}:${editing?.id}:${selected.type}`}
+        {#key editing?.id}
           <QuestionForm
             {quiz}
             round={selected}
@@ -265,6 +266,10 @@
     align-items: start;
   }
 
+  nav li {
+    min-width: 0;
+  }
+
   nav ol {
     display: grid;
     gap: var(--space-2);
@@ -284,6 +289,7 @@
     color: var(--fg);
     font: inherit;
     text-align: start;
+    overflow-wrap: anywhere;
     cursor: pointer;
   }
 

@@ -2,12 +2,9 @@
 
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
+import { inTauri } from './storage';
 
 const SPREADSHEET_TYPES = ['xlsx', 'csv'];
-
-function inTauri(): boolean {
-  return '__TAURI_INTERNALS__' in window;
-}
 
 /** Saves bytes under a name the teacher picks. Returns false when the teacher cancels. */
 export async function saveBytes(name: string, bytes: Uint8Array): Promise<boolean> {
@@ -25,22 +22,24 @@ export async function saveBytes(name: string, bytes: Uint8Array): Promise<boolea
   return true;
 }
 
+/** Opens the browser file chooser for the given extensions and resolves with the chosen file, or null when the teacher cancels. */
+export function pickFile(extensions: string[]): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = extensions.map((extension) => `.${extension}`).join(',');
+    input.addEventListener('cancel', () => resolve(null));
+    input.addEventListener('change', () => resolve(input.files?.[0] ?? null));
+    input.click();
+  });
+}
+
 /** Asks for an .xlsx or .csv file and returns its bytes, or null when the teacher cancels. */
 export async function pickSpreadsheet(): Promise<Uint8Array | null> {
   if (inTauri()) {
     const path = await open({ filters: [{ name: 'Spreadsheet', extensions: SPREADSHEET_TYPES }] });
     return path ? readFile(path) : null;
   }
-  return new Promise((resolve, reject) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = SPREADSHEET_TYPES.map((type) => `.${type}`).join(',');
-    input.addEventListener('cancel', () => resolve(null));
-    input.addEventListener('change', async () => {
-      const file = input.files?.[0];
-      if (!file) return resolve(null);
-      file.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer)), reject);
-    });
-    input.click();
-  });
+  const file = await pickFile(SPREADSHEET_TYPES);
+  return file ? new Uint8Array(await file.arrayBuffer()) : null;
 }

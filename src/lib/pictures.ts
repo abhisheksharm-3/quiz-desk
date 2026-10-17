@@ -4,20 +4,21 @@ import { appDataDir, sep } from '@tauri-apps/api/path';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { BaseDirectory, copyFile, mkdir } from '@tauri-apps/plugin-fs';
+import { pickFile } from './files';
+import { inTauri } from './storage';
 
 const EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
 const PICTURES_DIR = 'pictures';
-const inTauri = '__TAURI_INTERNALS__' in window;
-const appDataPath = inTauri ? (await appDataDir()).replace(/[\\/]$/, '') : '';
+const appDataPath = inTauri() ? (await appDataDir()).replace(/[\\/]$/, '') : '';
 
 /** Asks for an image. In the app it copies the file into the app data folder and returns its relative path; in a browser it returns a data URL. Returns null when the teacher cancels. */
 export async function importPicture(): Promise<string | null> {
-  return inTauri ? copyIntoAppData() : readAsDataUrl();
+  return inTauri() ? copyIntoAppData() : readAsDataUrl();
 }
 
 /** The URL an img element loads for a path returned by importPicture. */
 export function pictureSrc(path: string): string {
-  if (!inTauri) return path;
+  if (!inTauri()) return path;
   return convertFileSrc([appDataPath, ...path.split('/')].join(sep()));
 }
 
@@ -31,20 +32,13 @@ async function copyIntoAppData(): Promise<string | null> {
   return relative;
 }
 
-function readAsDataUrl(): Promise<string | null> {
+async function readAsDataUrl(): Promise<string | null> {
+  const file = await pickFile(EXTENSIONS);
+  if (!file) return null;
   return new Promise((resolve, reject) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = EXTENSIONS.map((extension) => `.${extension}`).join(',');
-    input.addEventListener('cancel', () => resolve(null));
-    input.addEventListener('change', () => {
-      const file = input.files?.[0];
-      if (!file) return resolve(null);
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-    input.click();
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
   });
 }

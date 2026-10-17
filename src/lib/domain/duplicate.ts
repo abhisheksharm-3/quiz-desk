@@ -8,19 +8,24 @@ export function normalizeText(text: string): string {
   return text.toLowerCase().replace(IGNORED_PUNCTUATION, '').replace(/\s+/g, ' ').trim();
 }
 
+function sameText(candidate: string, wanted: string): boolean {
+  const normalized = normalizeText(wanted);
+  return normalized !== '' && normalizeText(candidate) === normalized;
+}
+
+/** True when the English or the Hindi text of two drafts match, ignoring case, spacing and punctuation. */
+export function sameQuestion(a: Pick<QuestionDraft, 'en' | 'hi'>, b: Pick<QuestionDraft, 'en' | 'hi'>): boolean {
+  return sameText(a.en, b.en) || sameText(a.hi, b.hi);
+}
+
 export function findDuplicate(
   quiz: Quiz,
   draft: Pick<QuestionDraft, 'en' | 'hi'>,
   ignoreId?: string,
 ): Question | null {
-  const en = normalizeText(draft.en);
-  const hi = normalizeText(draft.hi);
-  const matches = (candidate: string, wanted: string) => wanted !== '' && normalizeText(candidate) === wanted;
   for (const round of quiz.rounds) {
-    for (const question of round.questions) {
-      if (question.id === ignoreId) continue;
-      if (matches(question.en, en) || matches(question.hi, hi)) return question;
-    }
+    const match = round.questions.find((question) => question.id !== ignoreId && sameQuestion(question, draft));
+    if (match) return match;
   }
   return null;
 }

@@ -2,7 +2,7 @@
 <script lang="ts">
   import Button from '../../components/Button.svelte';
   import Dialog from '../../components/Dialog.svelte';
-  import { findDuplicate } from '../../lib/domain/duplicate';
+  import { findDuplicate, sameQuestion } from '../../lib/domain/duplicate';
   import { parseQuestionRows, type ImportError, type ImportItem } from '../../lib/domain/importRows';
   import { addQuestion } from '../../lib/domain/quiz';
   import type { Quiz } from '../../lib/domain/types';
@@ -14,20 +14,26 @@
   let preview = $state<{ items: ImportItem[]; errors: ImportError[] } | null>(null);
   let failure: string | null = $state(null);
 
-  $effect(() => {
-    if (!open) {
+  function setOpen(isOpen: boolean) {
+    open = isOpen;
+    if (!isOpen) {
       preview = null;
       failure = null;
     }
-  });
+  }
 
   const rows = $derived(
-    (preview?.items ?? []).map((item) => ({
+    (preview?.items ?? []).map((item, index, items) => ({
       item,
       round: quiz.rounds.find((round) => round.id === item.roundId)?.name ?? '',
-      duplicate: findDuplicate(quiz, item.draft) !== null,
+      note: duplicateNote(item, items.slice(0, index)),
     })),
   );
+
+  function duplicateNote(item: ImportItem, earlier: ImportItem[]): string {
+    if (findDuplicate(quiz, item.draft)) return 'Already in this quiz';
+    return earlier.some((other) => sameQuestion(other.draft, item.draft)) ? 'Repeated earlier in this file' : '';
+  }
 
   async function downloadTemplate() {
     failure = null;
@@ -57,11 +63,11 @@
         if (round) addQuestion(round, draft);
       }
     });
-    open = false;
+    setOpen(false);
   }
 </script>
 
-<Dialog bind:open title="Import questions">
+<Dialog bind:open={() => open, setOpen} title="Import questions">
   <p>Fill in the template with a Round column that matches your round names. Pictures are added by hand.</p>
   <div class="buttons">
     <Button type="button" onclick={downloadTemplate}>Download template</Button>
@@ -76,7 +82,7 @@
     <div class="result" role="status">
       <h3>{preview.items.length} {preview.items.length === 1 ? 'question' : 'questions'} ready to import</h3>
       {#if preview.errors.length > 0}
-        <p class="error">{preview.errors.length} {preview.errors.length === 1 ? 'row' : 'rows'} will be skipped</p>
+        <p class="error">{preview.errors.length} {preview.errors.length === 1 ? 'problem' : 'problems'} found. Rows with problems are skipped.</p>
         <ul class="errors">
           {#each preview.errors as error (error.row)}
             <li>{error.message}</li>
@@ -97,7 +103,7 @@
               <tr>
                 <td>{row.round}</td>
                 <td lang={row.item.draft.en ? undefined : 'hi'}>{row.item.draft.en || row.item.draft.hi}</td>
-                <td>{row.duplicate ? 'Already in this quiz' : ''}</td>
+                <td>{row.note}</td>
               </tr>
             {/each}
           </tbody>
@@ -107,7 +113,7 @@
   {/if}
 
   <div class="buttons end">
-    <Button type="button" onclick={() => (open = false)}>Cancel</Button>
+    <Button type="button" onclick={() => setOpen(false)}>Cancel</Button>
     <Button type="button" variant="primary" disabled={!preview || preview.items.length === 0} onclick={confirmImport}>
       Import {preview?.items.length ?? 0} {preview?.items.length === 1 ? 'question' : 'questions'}
     </Button>

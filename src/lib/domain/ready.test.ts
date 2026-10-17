@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findDuplicate } from './duplicate';
+import { findDuplicate, sameQuestion } from './duplicate';
 import { addQuestion, addRound, addTeam, createQuiz, emptyAppData } from './quiz';
 import { readyCheck } from './ready';
 import type { Quiz, QuestionDraft, RoundType } from './types';
@@ -87,6 +87,17 @@ describe('readyCheck', () => {
     ]);
   });
 
+  it('rejects a correct option whose text is empty or missing', () => {
+    const rows = questions(10);
+    rows[0] = { options: ['1', '2', '', ''], correctOption: 'C' };
+    rows[1] = { options: null, correctOption: 'B' };
+    const quiz = quizWith([{ name: 'Physics', type: 'standard', questions: rows }]);
+    expect(readyCheck(quiz)).toEqual([
+      'Round 1 "Physics", question 1: option C is marked correct but has no text',
+      'Round 1 "Physics", question 2: option B is marked correct but has no text',
+    ]);
+  });
+
   it('accepts a correct option as the answer', () => {
     const rows = questions(10, { answerEn: '', correctOption: 'B', options: ['1', '2', '3', '4'] });
     expect(readyCheck(quizWith([{ name: 'Physics', type: 'standard', questions: rows }]))).toEqual([]);
@@ -113,6 +124,11 @@ describe('findDuplicate', () => {
 
   it('does not match two blank fields', () => {
     expect(findDuplicate(quiz, { en: '', hi: '' })).toBeNull();
+  });
+
+  it('compares two drafts the same way, so repeats inside one import are caught', () => {
+    expect(sameQuestion({ en: 'What is  H2O?', hi: '' }, { en: 'what is h2o', hi: '' })).toBe(true);
+    expect(sameQuestion({ en: '', hi: '' }, { en: '', hi: '' })).toBe(false);
   });
 
   it('skips the question being edited', () => {
