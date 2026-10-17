@@ -28,7 +28,7 @@
 
 {#if round.questions.length === 0}
   <p class="empty">
-    No {noun}s in this round yet. Add the first one below.
+    No {noun}s in this round yet. {round.type === 'picture' ? 'Add the first one below.' : 'Add the first one below, or import a spreadsheet.'}
   </p>
 {:else}
   <ol>

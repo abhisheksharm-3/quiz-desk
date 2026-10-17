@@ -15,6 +15,7 @@
   } from '../../lib/domain/quiz';
   import type { Question, QuestionDraft, Quiz, Round, RoundType } from '../../lib/domain/types';
   import { commit } from '../../lib/store.svelte';
+  import Import from './Import.svelte';
   import QuestionForm from './QuestionForm.svelte';
   import QuestionList from './QuestionList.svelte';
 
@@ -34,6 +35,7 @@
   let editing: Question | null = $state(null);
   let pendingDelete: Round | null = $state(null);
   let message: string | null = $state(null);
+  let importing = $state(false);
 
   const selected = $derived(quiz.rounds.find((round) => round.id === selectedId) ?? quiz.rounds[0] ?? null);
   const selectedIndex = $derived(selected ? quiz.rounds.indexOf(selected) : -1);
@@ -105,6 +107,9 @@
   <div class="head">
     <h2>Rounds</h2>
     <p class="count">{quiz.rounds.length} / {MAX_ROUNDS}</p>
+    <Button type="button" disabled={!selected} onclick={() => (importing = true)}>
+      Import from Excel or CSV
+    </Button>
   </div>
 
   <form class="add" onsubmit={add}>
@@ -210,6 +215,8 @@
   {/if}
 </section>
 
+<Import {quiz} bind:open={importing} />
+
 <Dialog
   bind:open={() => pendingDelete !== null, (isOpen) => !isOpen && (pendingDelete = null)}
   title="Delete this round?"
@@ -232,6 +239,10 @@
     align-items: baseline;
     gap: var(--space-3);
     max-width: 38rem;
+  }
+
+  .head :global(button) {
+    margin-inline-start: auto;
   }
 
   .count {
