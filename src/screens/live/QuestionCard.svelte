@@ -1,7 +1,7 @@
 <!-- The question on stage: picture, text, options. The answer, correct option and verdict render only when a result is passed. -->
 <script lang="ts">
   import { OPTION_LETTERS } from '../../lib/domain/options';
-  import { visibleText } from '../../lib/domain/questions';
+  import { answerLines, visibleText } from '../../lib/domain/questions';
   import type { Points, Question, Quiz } from '../../lib/domain/types';
   import { pictureSrc } from '../../lib/pictures';
   import ResultBanner from './ResultBanner.svelte';
@@ -19,12 +19,7 @@
   const text = $derived(visibleText(question, mode));
   const options = $derived(question.options?.map((label, index) => ({ letter: OPTION_LETTERS[index], label })).filter((option) => option.label.trim()) ?? []);
 
-  const answer = $derived.by(() => {
-    const lines = visibleText({ ...question, en: question.answerEn, hi: question.answerHi }, mode);
-    if (lines.en || lines.hi) return lines;
-    const correct = options.find((option) => option.letter === question.correctOption);
-    return { en: correct ? `${correct.letter}. ${correct.label}` : null, hi: null };
-  });
+  const answer = $derived(answerLines(question, mode));
 </script>
 
 <article class="card">

@@ -3,6 +3,7 @@
   import Button from '../components/Button.svelte';
   import { go } from '../lib/nav.svelte';
   import { quizById } from '../lib/store.svelte';
+  import BuzzerStage from './live/BuzzerStage.svelte';
   import RoundBoard from './live/RoundBoard.svelte';
   import StandardStage from './live/StandardStage.svelte';
 
@@ -26,6 +27,10 @@
 {:else if round.type === 'standard' || round.type === 'picture'}
   {#key round.id}
     <StandardStage {quiz} {round} onback={toBoard} />
+  {/key}
+{:else if round.type === 'buzzer'}
+  {#key round.id}
+    <BuzzerStage {quiz} {round} onback={toBoard} />
   {/key}
 {:else}
   <main class="notice">

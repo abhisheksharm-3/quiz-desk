@@ -5,6 +5,7 @@
     keyLabel: string;
     text: string;
     variant?: 'primary' | 'quiet' | 'danger';
+    hidden?: boolean;
     disabled: boolean;
     run: () => void;
   }
@@ -17,7 +18,7 @@
 </script>
 
 <div class="bar" role="group" aria-label="Quiz controls">
-  {#each commands as command (command.key)}
+  {#each commands.filter((candidate) => !candidate.hidden) as command (command.key)}
     <Button
       type="button"
       variant={command.variant}

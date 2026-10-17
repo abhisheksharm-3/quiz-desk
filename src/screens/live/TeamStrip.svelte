@@ -1,4 +1,4 @@
-<!-- Every team with its running total; the current team carries the accent label and, while idle, teams can be picked. -->
+<!-- Every team with its running total; the current team carries the accent label, pickable teams are buttons, locked teams are dimmed. -->
 <script lang="ts">
   import type { Team } from '../../lib/domain/types';
 
@@ -7,12 +7,16 @@
     totals,
     current,
     pickable,
+    locked = [],
+    keyed = false,
     onpick,
   }: {
     teams: Team[];
     totals: number[];
     current: number | null;
     pickable: boolean;
+    locked?: number[];
+    keyed?: boolean;
     onpick: (index: number) => void;
   } = $props();
 </script>
@@ -24,10 +28,14 @@
         type="button"
         class:current={index === current}
         aria-current={index === current ? 'true' : undefined}
-        disabled={!pickable}
+        class:locked={locked.includes(index)}
+        disabled={!pickable || locked.includes(index)}
         onclick={() => onpick(index)}
       >
-        <span class="name">{team.name}</span>
+        <span class="name">
+          {#if keyed}<kbd>{(index + 1) % 10}</kbd>{/if}
+          {team.name}
+        </span>
         <span class="total">{totals[index]}</span>
       </button>
     </li>
@@ -60,6 +68,20 @@
 
   button:disabled {
     cursor: default;
+  }
+
+  .locked {
+    opacity: 0.4;
+    text-decoration: line-through;
+  }
+
+  kbd {
+    margin-inline-end: var(--space-1);
+    padding: 0 var(--space-1);
+    border: 1px solid currentColor;
+    border-radius: var(--radius);
+    font: inherit;
+    font-size: var(--step--1);
   }
 
   .current {

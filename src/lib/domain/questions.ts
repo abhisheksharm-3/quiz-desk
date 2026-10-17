@@ -1,5 +1,6 @@
 /** Picking the next question of a round and which language lines to show. */
 
+import { OPTION_LETTERS } from './options';
 import type { Question, Quiz, Round, RoundType } from './types';
 
 export const ROUND_TYPE_LABELS: Record<RoundType, string> = {
@@ -20,4 +21,13 @@ export function visibleText(q: Question, mode: Quiz['languageMode']): { en: stri
     en: mode !== 'hi' && q.en.trim() ? q.en : null,
     hi: mode !== 'en' && q.hi.trim() ? q.hi : null,
   };
+}
+
+/** The answer lines to reveal: the written answer, or the correct option when no answer text was entered. */
+export function answerLines(q: Question, mode: Quiz['languageMode']): { en: string | null; hi: string | null } {
+  const written = visibleText({ ...q, en: q.answerEn, hi: q.answerHi }, mode);
+  if (written.en || written.hi) return written;
+  const index = q.correctOption === null ? -1 : OPTION_LETTERS.indexOf(q.correctOption);
+  const label = index < 0 ? '' : (q.options?.[index] ?? '');
+  return { en: label.trim() ? `${q.correctOption}. ${label}` : null, hi: null };
 }

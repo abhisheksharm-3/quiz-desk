@@ -9,9 +9,9 @@
   import * as sound from '../../lib/sound';
   import { app, commit } from '../../lib/store.svelte';
   import { createCountdown } from '../../lib/timer.svelte';
-  import ControlBar, { type Command } from './ControlBar.svelte';
+  import type { Command } from './ControlBar.svelte';
   import QuestionCard from './QuestionCard.svelte';
-  import TeamStrip from './TeamStrip.svelte';
+  import StageFrame from './StageFrame.svelte';
   import Timer from './Timer.svelte';
 
   let { quiz, round, onback }: { quiz: Quiz; round: Round; onback: () => void } = $props();
@@ -30,11 +30,6 @@
     const { questionId } = turn;
     return round.questions.find((candidate) => candidate.id === questionId) ?? null;
   });
-  const totals = $derived(
-    quiz.teams.map((team) =>
-      quiz.scores.filter((score) => score.teamId === team.id).reduce((sum, score) => sum + score.points, 0),
-    ),
-  );
   const currentTeam = $derived(turn.phase === 'idle' ? turn.nextTeam : turn.team);
   const scoringTeam = $derived(turn.phase === 'asking' || turn.phase === 'result' ? turn.team : null);
   const result = $derived(
@@ -134,120 +129,28 @@
     { key: 'escape', keyLabel: 'Esc', text: 'Round board', disabled: turn.phase === 'asking' || turn.phase === 'countdown', run: onback },
   ]);
 
-  function onKeydown(event: KeyboardEvent): void {
-    const key = event.key.toLowerCase();
-    const chord = event.metaKey || event.ctrlKey;
-    if (event.repeat || event.altKey || chord !== (key === 'z')) return;
-    const command = commands.find((candidate) => candidate.key === key);
-    if (!command) return;
-    event.preventDefault();
-    if (!command.disabled) command.run();
-  }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<StageFrame {quiz} {round} {commands} current={currentTeam} pickable={turn.phase === 'idle'} onpick={(team) => send({ type: 'pickTeam', team })}>
+  {#if turn.phase === 'idle' && !question}
+    <div class="notice">
+      <h2>No questions left in this round</h2>
+      <Button type="button" variant="primary" onclick={onback}>Back to round board</Button>
+    </div>
+  {:else if turn.phase === 'idle'}
+    <div class="notice">
+      <h2>{quiz.teams[turn.nextTeam].name} is up</h2>
+      <p>{round.questions.filter((candidate) => candidate.askedAt === null).length} of {round.questions.length} left</p>
+    </div>
+  {:else if turn.phase === 'countdown'}
+    <div class="notice">
+      <h2>Get ready, {quiz.teams[turn.team].name}</h2>
+    </div>
+  {:else if shown}
+    <QuestionCard question={shown} mode={quiz.languageMode} {result} />
+  {/if}
+  {#if turn.phase !== 'idle'}
+    <Timer left={countdown.left} total={round.timerSeconds} />
+  {/if}
+</StageFrame>
 
-<main class="stage">
-  <header>
-    <h1>{quiz.title}</h1>
-    <p class="round">{round.name}</p>
-    {#if quiz.quizMasters}<p class="masters">Quiz master {quiz.quizMasters}</p>{/if}
-  </header>
-
-  <section class="body" aria-live="off">
-    {#if turn.phase === 'idle' && !question}
-      <div class="notice">
-        <h2>No questions left in this round</h2>
-        <Button type="button" variant="primary" onclick={onback}>Back to round board</Button>
-      </div>
-    {:else if turn.phase === 'idle'}
-      <div class="notice">
-        <h2>{quiz.teams[turn.nextTeam].name} is up</h2>
-        <p>{round.questions.filter((candidate) => candidate.askedAt === null).length} of {round.questions.length} left</p>
-      </div>
-    {:else if turn.phase === 'countdown'}
-      <div class="notice">
-        <h2>Get ready, {quiz.teams[turn.team].name}</h2>
-      </div>
-    {:else if shown}
-      <QuestionCard question={shown} mode={quiz.languageMode} {result} />
-    {/if}
-    {#if turn.phase !== 'idle'}
-      <Timer left={countdown.left} total={round.timerSeconds} />
-    {/if}
-  </section>
-
-  <TeamStrip
-    teams={quiz.teams}
-    {totals}
-    current={currentTeam}
-    pickable={turn.phase === 'idle'}
-    onpick={(team) => send({ type: 'pickTeam', team })}
-  />
-  <ControlBar {commands} />
-</main>
-
-<style>
-  .stage {
-    display: grid;
-    grid-template-rows: auto 1fr auto auto;
-    gap: var(--space-4);
-    height: 100dvh;
-    padding: var(--safe-y) var(--safe-x);
-  }
-
-  header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-1) var(--space-4);
-  }
-
-  h1 {
-    font-size: var(--step-2);
-  }
-
-  .round {
-    padding: 0 var(--space-3);
-    border-radius: var(--radius-pill);
-    background: var(--accent-bg);
-    color: var(--accent-fg);
-    font-size: var(--step-1);
-    font-weight: 600;
-  }
-
-  .masters {
-    margin-inline-start: auto;
-    color: var(--muted);
-  }
-
-  .body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: var(--space-5);
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  .body > :global(.card) {
-    height: 100%;
-  }
-
-  .notice {
-    display: grid;
-    gap: var(--space-3);
-    justify-items: start;
-    align-self: center;
-  }
-
-  .notice h2 {
-    font-size: var(--step-5);
-    font-weight: 800;
-  }
-
-  .notice p {
-    color: var(--muted);
-    font-size: var(--step-1);
-  }
-</style>
