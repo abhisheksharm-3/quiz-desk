@@ -17,7 +17,7 @@
   }
 
   span {
-    font-size: var(--step--1);
+    font-size: var(--step-0);
     font-weight: 600;
     color: var(--muted);
   }

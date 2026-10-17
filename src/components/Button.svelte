@@ -53,16 +53,6 @@
     color: var(--wrong);
   }
 
-  button[aria-pressed='true'] {
-    border-color: var(--accent);
-    background: var(--accent-bg);
-    color: var(--accent-fg);
-  }
-
-  button[aria-pressed='true']::before {
-    content: '✓ ';
-  }
-
   button:disabled {
     opacity: 0.45;
     cursor: not-allowed;
