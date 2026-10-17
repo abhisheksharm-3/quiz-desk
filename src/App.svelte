@@ -2,6 +2,7 @@
 <script lang="ts">
   import Button from './components/Button.svelte';
   import Home from './screens/Home.svelte';
+  import Live from './screens/Live.svelte';
   import Setup from './screens/Setup.svelte';
   import { go, nav } from './lib/nav.svelte';
   import { app, initStore, saveStatus } from './lib/store.svelte';
@@ -29,6 +30,8 @@
     <Home />
   {:else if nav.screen === 'setup'}
     <Setup quizId={nav.quizId} />
+  {:else if nav.screen === 'live'}
+    <Live quizId={nav.quizId} roundId={nav.roundId} />
   {:else}
     <main class="state">
       <h1>This screen is not built yet</h1>

@@ -16,18 +16,12 @@
     updateQuestion,
     updateRound,
   } from '../../lib/domain/quiz';
+  import { ROUND_TYPE_LABELS } from '../../lib/domain/questions';
   import type { Question, QuestionDraft, Quiz, Round, RoundType } from '../../lib/domain/types';
   import { commit } from '../../lib/store.svelte';
   import Import from './Import.svelte';
   import QuestionForm from './QuestionForm.svelte';
   import QuestionList from './QuestionList.svelte';
-
-  const TYPE_LABELS: Record<RoundType, string> = {
-    standard: 'Standard',
-    picture: 'Picture',
-    buzzer: 'Buzzer',
-    rapid: 'Rapid fire',
-  };
 
   let { quiz }: { quiz: Quiz } = $props();
   let newName = $state('');
@@ -121,7 +115,7 @@
     </Field>
     <Field label="Type">
       <select bind:value={newType}>
-        {#each Object.entries(TYPE_LABELS) as [type, label] (type)}
+        {#each Object.entries(ROUND_TYPE_LABELS) as [type, label] (type)}
           <option value={type}>{label}</option>
         {/each}
       </select>
@@ -147,7 +141,7 @@
                 onclick={() => select(round)}
               >
                 <strong>{index + 1}. {round.name}</strong>
-                <span>{TYPE_LABELS[round.type]}, {countLabel(round)}</span>
+                <span>{ROUND_TYPE_LABELS[round.type]}, {countLabel(round)}</span>
               </button>
             </li>
           {/each}
@@ -161,7 +155,7 @@
           </Field>
           <Field label="Type">
             <select value={selected.type} onchange={(e) => retype(selected, e.currentTarget.value as RoundType)}>
-              {#each Object.entries(TYPE_LABELS) as [type, label] (type)}
+              {#each Object.entries(ROUND_TYPE_LABELS) as [type, label] (type)}
                 <option value={type}>{label}</option>
               {/each}
             </select>
